@@ -1,0 +1,83 @@
+\setcounter{chapter}{-1}
+\chapter{Syllabus}
+\label{cha:syllabus}
+\setcounter{page}{1}
+\pagestyle{fancy}
+
+\fcolorbox{gray!25}{gray!25}{
+    \centering
+    \begin{tabular}{ll}
+        \textbf{Course:} Parsing and Syntactic Processing \quad\qquad\qquad&
+        \textbf{Name:} Thomas Graf\\
+        \textbf{Course\#:} Lin630 (officially Lin650) &
+        \textbf{Email:} lin630@thomasgraf.net\\
+        \textbf{Time:} M 3:00--3:50, W 2:00--3:45&
+        \textbf{Office hours:} M11--12, F11--1, N249\\
+        \textbf{Course Website:} on Blackboard &
+        \textbf{Personal Website:} http://thomasgraf.net\\
+    \end{tabular}
+}
+
+\section{Overview}
+\begin{itemize}
+    \item \textbf{Big Questions}
+        \begin{itemize}
+            \item What is the relation between competence and performance, grammar and parser?
+            \item Are syntactic processing effects conditioned by the grammar?
+            \item What qualifies as a parser as opposed to a recognizer or a parsing procedure?
+        \end{itemize}
+        The first two are common questions for any processing course.
+        The third one hints at the special twist of this course: we approach these issues from a computational perspective!
+        Parsing theory is a big (albeit messy) area of computer science, there's tons of parsing models on the market.
+        So let's bring all these insights to bear on how humans parse natural language.
+
+    \item \textbf{Teaching Goals}\\
+        At the end of this course you will 
+        \begin{itemize}
+            \item be familiar with a variety of common parsing models (top-down, bottom-up, left-corner, Earley, CYK)
+            \item know the most common syntactic processing effects (in particular those related to memory usage)
+            \item be able evaluate claims in the psycholinguistic literature from a computational perspective
+            \item possibly have a paper ready to publish (there's some low-hanging fruits here)
+        \end{itemize}
+
+    \item \textbf{Prerequisites}\\
+    None beyond basic syntax skills --- you should be able to draw a reasonable tree for a sentence like \emph{The fact that the employee who the manager hired stole office supplies did not go unnoticed by the janitor}.
+\end{itemize}
+
+\section{Course Requirements}
+\begin{itemize}
+    \item\textbf{Readings}
+        \begin{itemize}
+            \item Read every assigned paper (there won't be that many)
+        \end{itemize}
+        %
+    \item \textbf{Homeworks}
+        \begin{itemize}
+            \item Short homeworks for each parsing model
+            \item Participate in discussion of selected homework exercises
+        \end{itemize}
+        %
+    \item \textbf{Paper (3 credits only)}\\
+        The second half of this course is meant to be run like a research group where we play around with current parsing models of Minimalist grammars.
+        Depending on how things develop, we might get a joint paper out of this, or maybe you'll work on something on your own.
+        At any rate you must hand in a paper of at least 8 pages with your name on it by the end of the course.
+\end{itemize}
+
+\section{Outline}
+
+\begin{longtable}{rlp{10cm}}
+    \emph{Wk} & \emph{Date} & \emph{Topic}\\\hline
+    1 & Aug 25, 27 & Marr's levels, parser VS grammar, phrase structure grammars\\
+    2 & Sep 3 & what is a parser (technical answer)\\
+    3 & Sep 8, 10 & top-down parsing\\
+    4 & Sep 15, 17 & bottom-up parsing\\
+    5 & Sep 22, 24 & left-corner parsing\\
+    6 & Sep 29, Oct 1 & Earley \& CKY\\
+    7 & Oct 6, 8 & everything our parsers miss\\
+    8 & Oct 13, 15 &  why the grammars aren't right\\
+    9 & Oct 27, 29 & Moving to Minimalist grammars\\
+    10 & Nov 3, 5 & Minimalist top-down parsing of derivation trees\\
+    11 & Nov 10, 12 & More on MG parsing\\
+    $\geq$12 & & research meetings
+\end{longtable}
+% chapter syllabus (end)

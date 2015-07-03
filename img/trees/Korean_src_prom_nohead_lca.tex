@@ -1,0 +1,144 @@
+% Gianpaul Rachiele
+% Korean, Subject Relative Clause, promotion analysis, No head movement, LCA
+\documentclass[12pt]{article}
+
+\usepackage{fixltx2e}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[a3paper,margin=.75cm]{geometry}
+\usepackage{amsmath}
+\usepackage{tikz-qtree}
+
+% you don't need to specify features in the derivation tree,
+% but if you think it's necessary for some reason, use the MG commands below
+
+% MG feature types
+\newcommand{\FeatFont}[1]{\ensuremath{\mathrm{#1}}} % typeset features in math roman
+\newcommand{\fcat}[1]{\ensuremath{\FeatFont{#1}}\ } % category feature
+\newcommand{\fsel}[1]{\ensuremath{\mathop{=}\FeatFont{#1}\ }} % selector feature
+\newcommand{\flcr}[1]{\ensuremath{\mathop{+}\FeatFont{#1}\ }} % licensor feature
+\newcommand{\flce}[1]{\ensuremath{\mathop{-}\FeatFont{#1}\ }} % licensee feature
+
+% MG lexical item
+% Format:
+%	argument 1: phonetic exponent
+%	argument 2: feature string (use feature macros)
+% Example:
+%	an empty C-head: \mlex{\emptystring}{\fsel{T} \fcat{C}}
+%   wh-moving which: \mlex{which}{\fsel{N} \fcat{D} \flce{wh}}
+\newcommand{\mlex}[2]{\ensuremath{\text{#1} ::\thinspace #2}}
+
+% empty string
+\newcommand{\emptystring}{\ensuremath{\varepsilon}}
+
+% Labeling Macros
+% Format:
+%	argument 1 = node label
+%	argument 2 = step at which node is put into memory
+% 	argument 3 = step at which node is flushed from memory
+% Example:
+%	Merge node, not held in memory: \Lab{Merge}{5}{6}
+%   lexical item, held in memory: \BLab{the}{2}{15}
+%   interior node, held in memory: \IBLab{TP}{2}{15}
+\newcommand{\Lab}[3]{\textsuperscript{#2}#1\textsubscript{#3}} % for normal nodes
+\newcommand{\BLab}[3]{\textsuperscript{#2}#1\boxed{\textsubscript{#3}}} % for boxed leaves
+\newcommand{\IBLab}[3]{\textsuperscript{#2}#1\boxed{\textsubscript{#3}}} % for boxed interior nodes
+
+% Derivation Tree Typesetting
+\newcommand{\TreeSize}{}   % set font size for node labels
+\newcommand{\TreeScale}{1} % set scaling factor of entire image
+\newcommand{\TreeDistanceValue}{2.5em} % vertical distance between nodes
+
+
+%%%%%%%%%%%%%
+%  Content  %
+%%%%%%%%%%%%%
+
+\begin{document}
+
+% annotated MG derivation
+% tikz-qtree primer:
+%    - trees are written as labeled bracketing via syntax [.LABEL subtree1 subtree2 ... ]
+%    - for LABEL, use one of the tree labeling macros from the preamble
+%    - for bar levels, the ' must be surrounded by $, i.e. $'$ (otherwise we get an apostrophe)
+%    - brackets must not touch (something like ]] will give compilation errors)
+%    - to add movement branches, you need to name nodes
+%           [.\node(NameOfNode){NodeLabel};
+%    - don't forget about the semicolon in this case
+%    - use descriptive names!
+%    - you can then draw movement branches with the draw command
+%           \draw[move,DIRECTION] (source) to (target);
+%      where DIRECTION in {bend left, bend right}
+%    - the direction can be followed by =n, n in [0,360], which defines the degree of curving
+
+\begin{tikzpicture}[
+        scale = \TreeScale,
+        move/.style = {dashed,blue},
+        level 1/.style = { level distance = \TreeDistanceValue }
+    ]
+    \Tree
+        [.\Lab{CP}{1}{2}
+            [.\Lab{C}{2}{3} ]
+            [.\node(TP1Spec){\Lab{TP}{2}{4}};
+                [.\Lab{T$'$}{4}{5}
+                    [.\BLab{T}{5}{27} ]
+                    [.\node(vP1Spec){\Lab{vP}{5}{6}};
+                    		[.\Lab{vP}{6}{7}
+                        [.\node(Subject){\Lab{DP}{7}{8}};
+                        [.\Lab{D}{8}{9} ]
+                            [.\node(TP2land){\Lab{RelP}{8}{10}};
+                                [.\Lab{Rel$'$}{10}{11}
+                                    [.\BLab{-n}{11}{24} ]
+                                    [.\node(CP2Spec){\Lab{CP}{11}{12}};
+                                        [.\Lab{C$'$}{12}{13}
+                                            [.\BLab{C}{13}{26} ]
+                                            [.\node(TP2Spec){\Lab{TP}{13}{14}};
+                                                [.\Lab{T$'$}{14}{15}
+                                                    [.\BLab{T}{15}{16} ]
+                                                    [.\node(vP2Spec){\Lab{vP}{15}{17}};
+                                                    [.\Lab{vP}{17}{18}
+                                                        [.\node(headNP){\Lab{tycoon}{18}{25}}; ]
+                                                        [.\IBLab{v$'$}{18}{19}
+                                                        [.\IBLab{v}{19}{22} ]
+                                                        [.\Lab{VP}{19}{20}
+                                                            [.\Lab{invited}{20}{23} ]
+                                                            [.\node(headNP2){\BLab{mayor}{20}{21}}; ]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+                        [.\IBLab{v$'$}{7}{28}
+                        	[.\IBLab{v}{28}{31} ] 
+                            [.\Lab{VP}{28}{29} 
+                            	[.\IBLab{loves}{29}{32} ]
+                            	[.\node(headNP3){\Lab{money}{29}{30}}; ] 
+                        ]
+                    ]
+                ]
+            ]												
+        ]
+    ]
+]
+
+    \draw[move,bend left=100] (Subject) to (TP1Spec);
+    \draw[move,bend left=40] (headNP) to (TP2Spec);
+    \draw[move,bend left=40] (TP2Spec) to (CP2Spec);
+    \draw[move,bend right=100] (headNP2) to (vP2Spec);
+    \draw[move,bend left=90] (TP2Spec) to (TP2land);
+
+\end{tikzpicture}
+
+
+Payload = 9/4\\
+PayloadLex = 8/3\\
+Tenure = 22/13\\
+TenureLex = 22/13
+
+\end{document}

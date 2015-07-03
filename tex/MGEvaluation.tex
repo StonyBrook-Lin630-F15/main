@@ -1,0 +1,728 @@
+\chapter{A Move-Eager Parser for MGs}
+\label{cha:StablerParser}
+
+The context-free parser for MGs has two disadvantages.
+First, it freely infers feature tuples, with the only restriction being that the features of these tuples are features of the grammar.
+Consequently, the parser may conjecture tuples that never occur in a well-formed derivation of the grammar, which is a major waste of resources.
+Second, its search through the tree is not contingent on conjectured landing sites.
+The parser follows a simple pattern of ``specifiers before complements'' pattern, with the minor twist that if a mover is found, the parser inserts it at the final target site and continues parsing from there.
+This means that the parser has to store a lot of material in memory.
+If it progressed on the most direct path to where it expects the mover to originate, without building any of the structure along the other paths, it may safe quite some resources.
+Let's call the first type of parser \emph{Merge-eager}, and the second \emph{Move-eager}.
+The top-down MG parser defined in \citet{Stabler12} is Move-eager and operates directly on the lexicon, which prevents it from conjecturing useless feature tuples.
+
+\section{A Closer Look at the Stabler Parser}
+See the paper for details, in particular the appendix.
+The crucial insights are as follows:
+%
+\begin{itemize}
+    \item Every Minimalist lexicon can be represented as a \emph{prefix tree}, where the prefixes correspond to the feature components of lexical items read from right to left.
+    \item The prefix tree guides the parser in the structure building process.
+    \item In order to deal with non-determinism, the parser keeps multiple parses in memory.
+    \item Parses are ordered by their probability, and those with a probability below a fixed threshold $p$ are discarded.
+        This is called \emph{beam parsing}.
+    \item Since the probability of a tree decreases with every level of embedding, left branch recursion is no longer a problem for the parser.
+        Instead of adding more and more levels of embedding \emph{ad infinitum}, the parser eventually reaches the probability threshold $p$ and conjectures no further levels.
+\end{itemize}
+
+\section{Psycholinguistic Adequacy}
+\subsection{Generalizations about Relative Clauses}
+Two major properties of relative clauses are firmly established in the literature (see \citealt{Gibson98} and references therein).
+%
+\begin{itemize}
+    \item \textbf{SC\slash RC $<$ RC\slash SC}\\
+        A sentential complement containing a relative clause is easier to process than a relative clause containing a sentential complement.
+    \item \textbf{SubjRC $<$ ObjRC}\\
+        A relative clause containing a subject gap is easier to parse than a relative clause containing an object gap.
+\end{itemize}
+%
+These generalizations were obtained via self-paced reading experiments and ERP studies with minimal pairs such as \eqref{ex:StablerParser_SC/RC-RC/SC} and \eqref{ex:StablerParser_SubjRC-ObjRC}, respectively.
+%
+\begin{exe}
+    \ex\label{ex:StablerParser_SC/RC-RC/SC}
+    \begin{xlist}
+        \ex The fact [\textsubscript{SC} that the employee$_i$ [\textsubscript{RC} who the manager hired $t_i$] stole office supplies] worried the executive.
+        \label{ex:StablerParser_SC/RC}
+        %
+        \ex The executive$_i$ [\textsubscript{RC} who the fact [\textsubscript{SC} that the employee stole offices supplies] worried $t_i$] hired the manager.
+        \label{ex:StablerParser_RC/SC}
+    \end{xlist}
+    %
+    \ex\label{ex:StablerParser_SubjRC-ObjRC}
+    \begin{xlist}
+        \ex The reporter$_i$ [\textsubscript{RC} who $t_i$ attacked the senator] admitted the error.
+        \label{ex:StablerParser_SubjRC}
+        \ex The reporter$_i$ [\textsubscript{RC} who the senator attacked $t_i$] admitted the error.
+        \label{ex:StablerParser_ObjRC}
+    \end{xlist}
+\end{exe}
+%
+We can use these sentences as test cases to determine whether the two types of MG parsers --- Merge-eager and Move-eager --- can account for these discrepancies, and if so, which one of them.
+
+\subsection{Refining our Metrics}
+In previous evaluations of parser predictions we used three metrics: payload for the number of nodes kept in memory, MaxTen for the maximum number of steps a node is kept in memory, and SumTen as the sum of all non-trivial tenure.
+For the MG-parser, it makes sense to introduce further subtypes of these.
+Since MGs have empty heads, the linguistic status of which is contentious, each metric can have two values, the standard one computed over all nodes, and a more restricted one that ignores all nodes that are empty heads.
+For the sake of succinctness we write these values in the slashed format $m/n$, where $m$ is the standard value and $n$ the restricted one.
+Another distinction that might be useful is the one between lexical items and phrasal nodes, which is why each metric also has a subtype that only considers leafs in the derivation.
+These subtypes are indicated by a subscripted \emph{Lex}.
+Overall, then, we have four metrics and each metric has a slashed value.
+%
+\begin{description}
+    \item[\BoxTen] number of all\slash pronounced nodes kept in memory for at least 3 steps (this is increased from our previous default of 2, following \citealt{GrafMarcinek14CMCL})
+        %
+    \item[\BoxLex] number of all\slash pronounced leaves kept in memory for at least 3 steps
+        %
+    \item[\MaxTen] greatest number of steps that any\slash some pronounced node is kept in memory
+    \item[\MaxLex] greatest number of steps that any\slash some pronounced leaf is kept in memory
+\end{description}
+%
+These metrics are taken from \citet{GrafMarcinek14CMCL}, where they are called \textbf{Box},\textbf{BoxLex}, \textbf{Max}, and \textbf{MaxLex}, respectively.
+
+\subsection{Sentential Complements and Relative Clauses}
+The Merge-eager and Move-eager derivation trees for \eqref{ex:StablerParser_SC/RC} and \eqref{ex:StablerParser_RC/SC} are given in Fig.~\ref{fig:StablerParser_DerSC-RC_Merge-Eager}--\ref{fig:StablerParser_Der-RC-SC_Move-Eager}.
+For the sake of clarity lexical items are given without their features, movement is indicated by dashed branches, and interior nodes are labeled in the fashion of X$'$-theory.
+
+% SC/RC
+\begin{figure}[tbph]
+\TreeSize
+\centering
+%
+\begin{tikzpicture}[
+    scale=\TreeScale,
+    level 1+/.style={level distance=\TreeDistanceValue, sibling distance=-.5em},
+    level 1/.style={sibling distance=-2em},
+    level 4/.style={sibling distance=-25em},
+    level 9/.style={sibling distance=-5em},
+    level 10/.style={sibling distance=-18em},
+    ]
+\Tree
+[.\Lab{CP}{0}{1}
+	[.\Lab{C}{1}{2} ]
+	[.\node(TP1){\Lab{TP}{1}{3}};
+		[.\Lab{T$'$}{3}{4}
+			[.\BLab{T}{4}{36} ]
+			[.\Lab{VP}{4}{5}
+				[.\node(TP1Subj){\Lab{DP}{5}{6}};
+					[.\Lab{the}{6}{7} ]
+					[.\Lab{NP}{6}{8}
+						[.\Lab{fact}{8}{9} ] 
+						[.\Lab{CP}{8}{10}
+							[.\Lab{that}{10}{11} ]
+                            [.\node(TP2){\Lab{TP}{10}{12}};
+                                [.\Lab{T$'$}{12}{13}
+                                    [.\BLab{T}{13}{32} ]
+                                    [.\Lab{VP}{13}{14}
+                                        [.\node(TP2Subj){\Lab{DP}{14}{15}};
+                                            [.\Lab{the}{15}{16} ]
+                                            [.\node(RCtarget){\Lab{NP}{15}{17}};
+                                                [.\Lab{N$'$}{17}{18}
+                                                    [.\BLab{who}{18}{27} ]
+                                                    [.\node(TP3){\Lab{TP}{18}{19}};
+                                                        [.\Lab{T$'$}{19}{20}
+                                                            [.\BLab{T}{20}{30} ]
+                                                            [.\Lab{VP}{20}{21}
+                                                                [.\node(TP3Subj){\Lab{DP}{21}{22}};
+                                                                    [.\BLab{the}{22}{28} ]
+                                                                    [.\BLab{manager}{22}{29} ]
+                                                                ]
+                                                                [.\Lab{V$'$}{21}{23}
+                                                                    [.\BLab{hired}{23}{31} ]
+                                                                    [.\node(RCsource){\Lab{DP}{23}{24}};
+                                                                        [.\Lab{D}{24}{25} ]
+                                                                        [.\Lab{employee}{24}{26} ]
+                                                                    ]
+                                                                ]
+                                                            ]	
+                                                        ]												
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                        [.\IBLab{V$'$}{14}{33}
+                                            [.\Lab{stole}{33}{34} ]
+                                            [.\Lab{office supplies}{33}{35} ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+						]
+					]
+				]
+				[.\IBLab{V$'$}{5}{37}
+					[.\Lab{worried}{37}{38} ]
+                    [.\Lab{DP}{37}{39}
+                        [.\Lab{the}{39}{40} ]
+                        [.\Lab{executive}{39}{41} ]
+                    ]
+				]
+			]
+		]
+	]
+]
+
+\draw[dashed,bend left] (TP1Subj) to (TP1);
+\draw[dashed,bend left] (TP2Subj) to (TP2);
+\draw[dashed,bend left=60] (TP3Subj) to (TP3);
+\draw[dashed,bend right=30] (RCsource.north) to (RCtarget);
+\end{tikzpicture}
+\caption{Merge-eager parse of sentential complement with embedded relative clause;
+    \MaxTen$=32/32$,
+    \MaxLex$=32/9$,
+    \BoxTen$=9/6$,
+    \BoxLex$=7/4$}
+\label{fig:StablerParser_DerSC-RC_Merge-Eager}
+\end{figure}
+
+% RC/SC
+\begin{figure}[tbph]
+\TreeSize
+\centering
+%
+\begin{tikzpicture}[
+    scale=\TreeScale,
+    level 1+/.style={level distance=\TreeDistanceValue},
+    level 1/.style={sibling distance=-5em},
+    level 2+/.style={sibling distance=-.5em},
+    level 3/.style={sibling distance=-10em},
+    level 4/.style={sibling distance=-20em},
+    level 9/.style={sibling distance=-10em},
+    level 10/.style={sibling distance=-20em}
+    ]
+\Tree
+[.\Lab{CP}{0}{1}
+	[.\Lab{C}{1}{2} ]
+	[.\node(TP1){\Lab{TP}{1}{3}};
+		[.\Lab{T$'$}{3}{4}
+			[.\BLab{T}{4}{37} ]
+			[.\Lab{VP}{4}{5}
+				[.\node(TP1Subj){\Lab{DP}{5}{6}};
+					[.\Lab{the}{6}{7} ]
+					[.\node(RCtarget){\Lab{NP}{6}{8}};
+						[.\Lab{N$'$}{8}{9}
+							[.\BLab{who}{9}{26} ]
+							[.\node(TP2){\Lab{TP}{9}{10}};
+								[.\Lab{T$'$}{10}{11}
+									[.\BLab{T}{11}{35} ]
+									[.\Lab{VP}{11}{12}
+										[.\node(TP2Subj){\Lab{DP}{12}{13}};
+											[.\BLab{the}{14}{27} ]
+											[.\Lab{NP}{14}{15}
+												[.\BLab{fact}{15}{28} ]
+												[.\Lab{CP}{15}{16}
+													[.\BLab{that}{16}{29} ]
+													[.\node(TP3){\Lab{TP}{16}{17}};
+														[.\Lab{T$'$}{17}{18}
+															[.\BLab{T}{18}{32} ]
+															[.\Lab{VP}{18}{19}
+                                                                [.\node(TP3Subj){\Lab{DP}{19}{20}};
+																	[.\BLab{the}{20}{30} ]
+																	[.\BLab{employee}{20}{31} ]
+																]
+																[.\Lab{VP}{19}{21}
+																	[.\BLab{stole}{21}{33} ]
+																	[.\BLab{office supplies}{21}{34} ]
+																]
+															]
+														]
+													]
+												]											
+											]				
+										]
+										[.\IBLab{V$'$}{12}{22}
+											[.\BLab{worried}{22}{36} ]
+                                            [.\node(RCsource){\Lab{DP}{22}{23}};
+                                                \Lab{D}{23}{24}
+                                                \Lab{executive}{23}{25}
+                                            ]
+										]
+									]
+								]
+							]
+						]
+					]
+				]
+				[.\IBLab{V$'$}{5}{38}
+					[.\Lab{hired}{38}{39} ]
+                    [.\Lab{DP}{38}{40}
+                        [.\Lab{the}{40}{41} ]
+                        [.\Lab{manager}{40}{41} ]
+                    ]
+				]
+			]
+		]
+	]
+]
+
+\draw[dashed,bend left] (TP1Subj) to (TP1);
+\draw[dashed,bend left] (TP2Subj) to (TP2);
+\draw[dashed,bend left=60] (TP3Subj) to (TP3);
+\draw[dashed,bend right] (RCsource.north) to (RCtarget);
+\end{tikzpicture}
+\caption{Merge-eager parse of relative clause containing a sentential complement;
+    \MaxTen$=33/33$,
+    \MaxLex$=33/17$,
+    \BoxTen$=14/11$,
+    \BoxLex$=12/9$}
+\label{fig:StablerParser_Der-RC-SC_Merge-Eager}
+\end{figure}
+
+% SC/RC
+\begin{figure}[tbph]
+\TreeSize
+\centering
+%
+\begin{tikzpicture}[
+    scale=\TreeScale,
+    level 1+/.style={level distance=\TreeDistanceValue, sibling distance=-.5em},
+    level 1/.style={sibling distance=-2em},
+    level 4/.style={sibling distance=-25em},
+    level 9/.style={sibling distance=-5em},
+    level 10/.style={sibling distance=-18em},
+    ]
+\Tree
+[.\Lab{CP}{0}{1}
+	[.\Lab{C}{1}{2} ]
+	[.\node(TP1){\Lab{TP}{1}{3}};
+		[.\Lab{T$'$}{3}{4}
+			[.\BLab{T}{4}{35} ]
+			[.\Lab{VP}{4}{5}
+				[.\node(TP1Subj){\Lab{DP}{5}{6}};
+					[.\Lab{the}{6}{7} ]
+					[.\Lab{NP}{6}{8}
+						[.\Lab{fact}{8}{9} ] 
+						[.\Lab{CP}{8}{10}
+							[.\Lab{that}{10}{11} ]
+                            [.\node(TP2){\Lab{TP}{10}{12}};
+                                [.\Lab{T$'$}{12}{13}
+                                    [.\BLab{T}{13}{32} ]
+                                    [.\Lab{VP}{13}{14}
+                                        [.\node(TP2Subj){\Lab{DP}{14}{15}};
+                                            [.\Lab{the}{15}{16} ]
+                                            [.\node(RCtarget){\Lab{NP}{15}{17}};
+                                                [.\Lab{N$'$}{17}{18}
+                                                    [.\BLab{who}{18}{26} ]
+                                                    [.\node(TP3){\Lab{TP}{18}{19}};
+                                                        [.\Lab{T$'$}{19}{20}
+                                                            [.\BLab{T}{20}{30} ]
+                                                            [.\Lab{VP}{20}{21}
+                                                                [.\node(TP3Subj){\IBLab{DP}{21}{27}};
+                                                                    [.\Lab{the}{27}{28} ]
+                                                                    [.\Lab{manager}{27}{29} ]
+                                                                ]
+                                                                [.\Lab{V$'$}{21}{22}
+                                                                    [.\BLab{hired}{22}{31} ]
+                                                                    [.\node(RCsource){\Lab{DP}{22}{23}};
+                                                                        [.\Lab{D}{23}{24} ]
+                                                                        [.\Lab{employee}{23}{25} ]
+                                                                    ]
+                                                                ]
+                                                            ]	
+                                                        ]												
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                        [.\IBLab{V$'$}{14}{32}
+                                            [.\Lab{stole}{32}{33} ]
+                                            [.\Lab{office supplies}{32}{34} ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+						]
+					]
+				]
+				[.\IBLab{V$'$}{5}{36}
+					[.\Lab{worried}{36}{37} ]
+                    [.\Lab{DP}{36}{38}
+                        [.\Lab{the}{38}{39} ]
+                        [.\Lab{executive}{38}{40} ]
+                    ]
+				]
+			]
+		]
+	]
+]
+
+\draw[dashed,bend left] (TP1Subj) to (TP1);
+\draw[dashed,bend left] (TP2Subj) to (TP2);
+\draw[dashed,bend left=60] (TP3Subj) to (TP3);
+\draw[dashed,bend right=30] (RCsource.north) to (RCtarget);
+\end{tikzpicture}
+\caption{Move-eager parse of sentential complement with embedded relative clause;
+    \MaxTen$=31/31$,
+    \MaxLex$=31/8$,
+    \BoxTen$=8/5$,
+    \BoxLex$=5/2$}
+\label{fig:StablerParser_Der-SC-RC_Move-Eager}
+\end{figure}
+
+% RC/SC
+\begin{figure}[tbph]
+\TreeSize
+\centering
+%
+\begin{tikzpicture}[
+    scale=\TreeScale,
+    level 1+/.style={level distance=\TreeDistanceValue},
+    level 1/.style={sibling distance=-5em},
+    level 2+/.style={sibling distance=-.5em},
+    level 3/.style={sibling distance=-10em},
+    level 4/.style={sibling distance=-20em},
+    level 9/.style={sibling distance=-10em},
+    level 10/.style={sibling distance=-20em}
+    ]
+\Tree
+[.\Lab{CP}{0}{1}
+	[.\Lab{C}{1}{2} ]
+	[.\node(TP1){\Lab{TP}{1}{3}};
+		[.\Lab{T$'$}{3}{4}
+			[.\BLab{T}{4}{36} ]
+			[.\Lab{VP}{4}{5}
+				[.\node(TP1Subj){\Lab{DP}{5}{6}};
+					[.\Lab{the}{6}{7} ]
+					[.\node(RCtarget){\Lab{NP}{6}{8}};
+						[.\Lab{N$'$}{8}{9}
+							[.\BLab{who}{9}{17} ]
+							[.\node(TP2){\Lab{TP}{9}{10}};
+								[.\Lab{T$'$}{10}{11}
+									[.\BLab{T}{11}{34} ]
+									[.\Lab{VP}{11}{12}
+										[.\node(TP2Subj){\IBLab{DP}{12}{18}};
+											[.\Lab{the}{18}{19} ]
+											[.\Lab{NP}{18}{20}
+												[.\Lab{fact}{20}{21} ]
+												[.\Lab{CP}{20}{22}
+													[.\Lab{that}{22}{23} ]
+													[.\node(TP3){\Lab{TP}{22}{24}};
+														[.\Lab{T$'$}{24}{25}
+															[.\BLab{T}{25}{30} ]
+															[.\Lab{VP}{25}{26}
+                                                                [.\node(TP3Subj){\Lab{DP}{26}{27}};
+																	[.\Lab{the}{27}{28} ]
+																	[.\Lab{employee}{27}{29} ]
+																]
+																[.\IBLab{VP}{26}{31}
+																	[.\Lab{stole}{31}{32} ]
+																	[.\Lab{office supplies}{31}{33} ]
+																]
+															]
+														]
+													]
+												]											
+											]				
+										]
+										[.\Lab{V$'$}{12}{13}
+											[.\BLab{worried}{13}{35} ]
+                                            [.\node(RCsource){\Lab{DP}{13}{14}};
+                                                \Lab{D}{14}{15}
+                                                \Lab{executive}{14}{16}
+                                            ]
+										]
+									]
+								]
+							]
+						]
+					]
+				]
+				[.\IBLab{V$'$}{5}{37}
+					[.\Lab{hired}{37}{38} ]
+                    [.\Lab{DP}{37}{39}
+                        [.\Lab{the}{39}{40} ]
+                        [.\Lab{manager}{39}{41} ]
+                    ]
+				]
+			]
+		]
+	]
+]
+
+\draw[dashed,bend left] (TP1Subj) to (TP1);
+\draw[dashed,bend left] (TP2Subj) to (TP2);
+\draw[dashed,bend left=60] (TP3Subj) to (TP3);
+\draw[dashed,bend right] (RCsource.north) to (RCtarget);
+\end{tikzpicture}
+\caption{Move-eager parse of relative clause containing a sentential complement;
+    \MaxTen$=32/32$,
+    \MaxLex$=32/22$,
+    \BoxTen$=8/5$,
+    \BoxLex$=5/2$}
+\label{fig:StablerParser_Der-RC-SC_Move-Eager}
+\end{figure}
+
+As can be seen in Tab.~\ref{tab:StablerParser_SC-RC-Table}, the Merge-eager and the Move-eager parsers behave almost exactly the same.
+With both of them \MaxTen makes barely a difference between the two structures, whereas \MaxLex correctly prefers SC\slash RC if empty heads are ignored.
+Results are mixed for the payload metrics.
+With a Merge-eager parser they indeed capture the preference for SC\slash RC, but the Move-eager parser shows no difference for these metrics.
+This isn't too surprising considering that payload wasn't a useful metric for the CFG parsing models either.
+The surprising thing, then, is that the payload metrics actually work for Merge-eager parser.
+%
+\begin{table}[tbph]
+    \centering
+    \begin{subtable}[b]{0.475\textwidth}
+        \centering
+        \begin{tabular}{lcc}
+                     & \textbf{SC\slash RC} & \textbf{RC\slash SC}\\\hline
+             \BoxTen & 9/6                  & 14/11\\
+             \BoxLex & 7/4                  & 12/9\\
+             \MaxTen & 32/32                & 33/33\\
+             \MaxLex & 32/9                 & 33/17\\
+        \end{tabular}
+    \caption{Merge-eager}
+    \end{subtable}
+    %
+    \begin{subtable}[b]{0.475\textwidth}
+        \centering
+        \begin{tabular}{lcc}
+                     & \textbf{SC\slash RC} & \textbf{RC\slash SC}\\\hline
+             \BoxTen & 8/5                  & 8/5\\
+             \BoxLex & 5/2                  & 5/2\\
+             \MaxTen & 31/31                & 32/32\\
+             \MaxLex & 31/8                 & 33/22\\
+        \end{tabular}
+    \caption{Move-eager}
+    \end{subtable}
+\caption{Overview of processing predictions for SC\slash RC and RC\slash SC}
+\label{tab:StablerParser_SC-RC-Table}
+\end{table}
+
+
+\subsection{Subject Gaps and Object Gaps}
+The results for subject gaps versus object gaps are slightly different.
+Once again \MaxLex makes the right predictions for both parsers, and so do \BoxTen and \BoxLex (although the difference is much more pronounced with the Merge-eager parser in this case).
+\MaxTen seems to predict a tie, but earlier in the course we already said that if two trees have the same \MaxTen value, we can rank them according to the second-highest tenure value.
+With both parsers these values are 7/7 for the subject gap sentence and 10/9 for the object gap sentence, so a preference for subject gaps emerges even with \MaxTen.
+%
+\begin{table}[tbph]
+    \centering
+    \begin{subtable}[b]{0.475\textwidth}
+        \centering
+        \begin{tabular}{lcc}
+                     & \textbf{SubjRC} & \textbf{ObjRC}\\\hline
+             \BoxTen & 5/3             & 7/5\\
+             \BoxLex & 3/1             & 6/4\\
+             \MaxTen & 19/19           & 19/19\\
+             \MaxLex & 19/7            & 19/9\\
+        \end{tabular}
+    \caption{Merge-eager}
+    \end{subtable}
+    %
+    \begin{subtable}[b]{0.475\textwidth}
+        \centering
+        \begin{tabular}{lcc}
+                     & \textbf{SubjRC} & \textbf{ObjRC}\\\hline
+             \BoxTen & 5/3                  & 6/4\\
+             \BoxLex & 3/1                  & 4/2\\
+             \MaxTen & 19/19                & 19/19\\
+             \MaxLex & 19/7                 & 19/9\\
+        \end{tabular}
+    \caption{Move-eager}
+    \end{subtable}
+\caption{Overview of processing predictions for SC\slash RC and RC\slash SC}
+\label{tab:StablerParser_SubjObj-Table}
+\end{table}
+
+% SubjRC
+\begin{figure}[tbph]
+\TreeSize
+\centering
+%
+\begin{tikzpicture}[
+    scale=\TreeScale,
+    level 1+/.style={level distance=\TreeDistanceValue},
+    level 4/.style={sibling distance=-13em}
+    ]
+\Tree
+[.\Lab{CP}{0}{1}
+	[.\Lab{C}{1}{2} ]
+	[.\node(TP1){\Lab{TP}{1}{3}};
+		[.\Lab{T$'$}{3}{4}
+			[.\BLab{T}{4}{23} ]
+			[.\Lab{VP}{4}{5}
+				[.\node(TP1Subj){\Lab{DP}{5}{6}};
+					[.\Lab{the}{6}{7} ]
+					[.\node(RCtarget){\Lab{NP}{6}{8}};
+						[.\Lab{N$'$}{8}{9}
+							[.\BLab{who}{9}{16} ]
+							[.\node(TP2){\Lab{TP}{9}{10}};
+								[.\Lab{T$'$}{10}{11}
+									[.\BLab{T}{11}{17} ]
+									[.\Lab{VP}{11}{12}
+                                        [.\node(RCsource){\Lab{r}{12}{13}};
+                                            \Lab{D}{13}{14}
+                                            \Lab{reporter}{13}{15}
+                                        ]
+										[.\IBLab{V$'$}{12}{18}
+											[.\Lab{attacked}{18}{19} ]
+                                            [.\Lab{DP}{18}{20}
+                                                [.\Lab{the}{20}{21} ]
+                                                [.\Lab{senator}{20}{22} ]
+                                            ]
+										]
+									]
+								]
+							]
+						]
+					]
+				]
+				[.\IBLab{V$'$}{5}{24}
+					[.\Lab{admitted}{24}{25} ]
+                    [.\Lab{DP}{24}{26}
+                        [.\Lab{the}{26}{27} ]
+                        [.\Lab{error}{26}{28} ]
+                    ]
+				]
+			]
+		]
+	]												
+]
+
+\draw[dashed,bend left] (TP1Subj) to (TP1);
+\draw[dashed,bend left=50] (RCsource) to (TP2);
+\draw[dashed,bend left=30] (RCsource) to (RCtarget.south west);
+\end{tikzpicture}
+\caption{Merge-eager and Move-eager parse of relative clause with subject gap; 
+    \MaxTen$=19/19$,
+    \MaxLex$=19/7$,
+    \BoxTen$=5/3$,
+    \BoxLex$=3/1$}
+\label{fig:StablerParser_DerSubjRC}
+\end{figure}
+
+% ObjRC
+\begin{figure}[tbph]
+\TreeSize
+\centering
+%
+\begin{tikzpicture}[
+    scale=\TreeScale,
+    level 1+/.style={level distance=\TreeDistanceValue},
+    level 4/.style={sibling distance=-20em}
+    ]
+\Tree
+[.\Lab{CP}{0}{1}
+	[.\Lab{C}{1}{2} ]
+	[.\node(TP1){\Lab{TP}{1}{3}};
+		[.\Lab{T$'$}{3}{4}
+			[.\BLab{T}{4}{23} ]
+			[.\Lab{VP}{4}{5}
+				[.\node(TP1Subj){\Lab{DP}{5}{6}};
+					[.\Lab{the}{6}{7} ]
+					[.\node(RCtarget){\Lab{NP}{6}{8}};
+						[.\Lab{N$'$}{8}{9}
+							[.\BLab{who}{9}{18} ]
+							[.\node(TP2){\Lab{TP}{9}{10}};
+								[.\Lab{T$'$}{10}{11}
+									[.\BLab{T}{11}{21} ]
+									[.\Lab{VP}{11}{12}
+                                        [.\node(TP2Subj){\Lab{DP}{12}{13}};
+                                            [.\BLab{the}{13}{19} ]
+                                            [.\BLab{senator}{13}{20} ]
+                                        ]
+										[.\Lab{V$'$}{12}{14}
+											[.\BLab{attacked}{14}{22} ]
+											[.\node(RCsource){\Lab{DP}{14}{15}};
+                                                \Lab{D}{15}{16}
+                                                \Lab{reporter}{15}{17}
+                                            ]
+										]
+									]
+								]
+							]
+						]
+					]
+				]
+				[.\IBLab{V$'$}{5}{24}
+					[.\Lab{admitted}{24}{25} ]
+                    [.\Lab{DP}{24}{26}
+                        [.\Lab{the}{26}{27} ]
+                        [.\Lab{error}{26}{27} ]
+                    ]
+				]
+			]
+		]
+	]
+]
+
+\draw[dashed,bend left=45] (TP1Subj) to (TP1);
+\draw[dashed,bend left=45] (TP2Subj) to (TP2);
+\draw[dashed,bend right] (RCsource) to (RCtarget);
+\end{tikzpicture}
+\caption{Merge-eager parse of relative clause with object gap;
+    \MaxTen$=19/19$,
+    \MaxLex$=19/9$,
+    \BoxTen$=7/5$,
+    \BoxLex$=6/4$}
+\label{fig:StablerParser_Der-ObjRC_Merge-Eager}
+\end{figure}
+
+% ObjRC
+\begin{figure}[tbph]
+\TreeSize
+\centering
+%
+\begin{tikzpicture}[
+    scale=\TreeScale,
+    level 1+/.style={level distance=\TreeDistanceValue},
+    level 4/.style={sibling distance=-20em}
+    ]
+\Tree
+[.\Lab{CP}{0}{1}
+	[.\Lab{C}{1}{2} ]
+	[.\node(TP1){\Lab{TP}{1}{3}};
+		[.\Lab{T$'$}{3}{4}
+			[.\BLab{T}{4}{23} ]
+			[.\Lab{VP}{4}{5}
+				[.\node(TP1Subj){\Lab{DP}{5}{6}};
+					[.\Lab{the}{6}{7} ]
+					[.\node(RCtarget){\Lab{NP}{6}{8}};
+						[.\Lab{N$'$}{8}{9}
+							[.\BLab{who}{9}{17} ]
+							[.\node(TP2){\Lab{TP}{9}{10}};
+								[.\Lab{T$'$}{10}{11}
+									[.\BLab{T}{11}{21} ]
+									[.\Lab{VP}{11}{12}
+                                        [.\node(TP2Subj){\IBLab{DP}{12}{18}};
+                                            [.\Lab{the}{18}{19} ]
+                                            [.\Lab{senator}{18}{20} ]
+                                        ]
+										[.\Lab{V$'$}{12}{13}
+											[.\BLab{attacked}{13}{22} ]
+											[.\node(RCsource){\Lab{DP}{13}{14}};
+                                                \Lab{D}{14}{15}
+                                                \Lab{reporter}{14}{16}
+                                            ]
+										]
+									]
+								]
+							]
+						]
+					]
+				]
+				[.\IBLab{V$'$}{5}{24}
+					[.\Lab{admitted}{24}{25} ]
+                    [.\Lab{DP}{24}{26}
+                        [.\Lab{the}{26}{27} ]
+                        [.\Lab{error}{26}{27} ]
+                    ]
+				]
+			]
+		]
+	]
+]
+
+\draw[dashed,bend left=45] (TP1Subj) to (TP1);
+\draw[dashed,bend left=45] (TP2Subj) to (TP2);
+\draw[dashed,bend right] (RCsource) to (RCtarget);
+\end{tikzpicture}
+\caption{Move-eager parse of relative clause with object gap; 
+    \MaxTen$=19/19$,
+    \MaxLex$=19/9$,
+    \BoxTen$=6/4$,
+    \BoxLex$=4/2$}
+\label{fig:StablerParser_DerObjRC_Move-Eager}
+\end{figure}
+
+\bibliographystyle{../../linquiry3}
+\bibliography{../../universal,../../graf}

@@ -1,0 +1,50 @@
+%=================================================================
+%				preamble
+%=================================================================
+\documentclass[11pt,letterpaper]{book}
+
+\newcommand{\theauthor}{Thomas Graf}		        
+\newcommand{\university}{Stony Brook University}	
+\newcommand{\emailaddress}{lin630@thomasgraf.net}
+\newcommand{\coursenumber}{Lin630}
+\newcommand{\coursename}{Parsing and Syntactic Processing}
+\newcommand{\thetitle}{\texorpdfstring{\coursenumber\\ \coursename}{\coursenumber --- \coursename}}
+\newcommand{\thekeywords}{graduate level, research seminar, mathematical linguistics, syntax, Minimalist grammars}
+\newcommand{\thedate}{}
+
+\usepackage{mypackages}
+\usepackage{mycommands}
+
+
+
+%=================================================================
+%			title format
+%=================================================================
+\author{\theauthor}
+\title{\thetitle}
+\date{\thedate}
+
+%=================================================================
+%			content
+%=================================================================
+\begin{document}
+\raggedbottom
+\pagestyle{empty}
+\maketitle
+\tableofcontents
+
+\include{./tex/syllabus}
+\pagestyle{fancy}
+\include{./tex/BigPicture}
+\include{./tex/ParserOverview}
+\include{./tex/TopDown}
+\include{./tex/TopDownEvaluation}
+\include{./tex/BottomUp}
+\include{./tex/LeftCorner}
+\include{./tex/MG-TopDown}
+\include{./tex/MGEvaluation}
+
+%=================================================================
+%			bibliography
+%=================================================================
+\end{document}

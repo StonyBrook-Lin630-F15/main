@@ -1,0 +1,378 @@
+\chapter{Left-Corner Parsing}
+\label{cha:LeftCorner}
+
+Top-down parsers and bottom-up parsers each turned out to have both their advantages and disadvantages.
+Top-down parsers are purely predictive, the input string is only checked against fully built branches --- those that end in a terminal symbol --- but does not guide the prediction process itself.
+Bottom-up parsers are purely driven by the input string and lack any kind of predictiveness.
+In particular, a bottom-up parser may entertain analyses for the substring spanning from position $i$ to $j$ that are incompatible with the analysis for the substring from $0$ to $i-1$.
+Neither behavior seems to be followed by the human parser.
+The parser is predictive, since ungrammatical sentences are recognized as such as soon as the structure becomes unsalvageable.
+At the same time, though, the prediction process is guided by the input seen so far.
+What we need, then, is a formal parsing model that integrates top-down prediction and bottom-up reduction.
+Left-corner parsing does exactly that.
+
+\section{Intuition}
+\label{sec:LeftCorner_Intuition}
+
+The ingenious idea of left-corner parsing is to restrict the prediction step such that the parser conjectures $X$ only if there is already some bottom-up evidence for the existence of $X$.
+More precisely, the parser conjectures an XP only if a \emph{possible left corner of $X$} has already been identified.
+The \emph{left corner of a rewrite rule} is the leftmost symbol on the righthand side of the rewrite arrow (intuitively, the symbol the arrow points at).
+For instance, the left corner of NP \rewrite\ Det N is Det.
+Thus $Y$ is a possible left corner of $X$ only if the grammar contains a rewrite rule $X$ \rewrite\ $Y$ $\gamma$.
+In this case, the parser may conjecture the existence of $X$ and $\gamma$ once it has reached $Y$ in a bottom-up fashion.
+
+Consider our familiar toy grammar.
+%
+\begin{center}
+    \begin{tabular}{rrlp{3em}rrl}
+        1)  & S   & \rewrite\ NP VP               &  & 
+        6)  & Det & \rewrite\ a | the
+        \\
+        2)  & NP  & \rewrite\ PN                  &  & 
+        7)  & N   & \rewrite\ car | truck | anvil
+        \\
+        3)  & NP  & \rewrite\ Det N               &  & 
+        8)  & PN  & \rewrite\ Bugs | Daffy
+        \\
+        4)  & VP  & \rewrite\ Vi                  &  & 
+        9)  & Vi  & \rewrite\ fell over
+        \\
+        5)  & VP  & \rewrite\ Vt NP               &  & 
+        10) & Vt  & \rewrite\ hit
+        \\
+    \end{tabular}
+\end{center}
+%
+Rather than conjecturing S \rewrite\ NP VP right away, the parser has to wait until it has identified an NP before it can try to build an S\@.
+The NP, in turn, must be found bottom-up.
+This may involve a sequence of bottom-up reductions: read \emph{Daffy}, reduce \emph{Daffy} to PN, reduce PN to NP\@.
+Alternatively, it may involve a mixture of bottom-up reduction and left-corner condition prediction: read \emph{the}, reduce to Det, use the rewrite rule NP \rewrite\ Det N in your top-down prediction, read \emph{anvil}, reduce to N, reduce Det N to NP\@.
+Now that the NP has been identified, the parser may use S \rewrite\ NP VP in a prediction step.
+
+\begin{center}
+    \begin{tabular}{r|c|l}
+        \textbf{string} & \textbf{rule}          & \textbf{predictions}\\
+        the             & read input             & \\
+        Det             & Det \rewrite\ the      & \\
+                        & left-corner prediction & N to yield NP\\
+        anvil           & read input             & N to yield NP\\
+        N               & N \rewrite\ anvil      & N to yield NP\\
+        NP              & complete prediction    & VP to yield S\\
+        hit             & read input             & VP to yield S\\
+        Vt              & Vt \rewrite\ hit       & VP to yield S\\
+                        & left-corner prediction & VP to yield S, NP to yield VP\\
+        Daffy           & read input             & VP to yield S, NP to yield VP\\
+        PN              & PN \rewrite\ Daffy     & VP to yield S, NP to yield VP\\
+        NP              & NP \rewrite\ PN        & VP to yield S, NP to yield VP\\
+        VP              & complete prediction    & VP to yield S\\
+        S               & complete prediction    & 
+    \end{tabular}
+\end{center}
+
+The usual four way split between depth-first or breadth-first on the one hand and left-to-right versus right-to-left on the other makes little sense for left-corner parsers.
+The standard left-corner parser is depth-first left-to-right.
+A breadth-first left-corner parser behaves like a bottom-up parser if left-corner predictions are delayed, or like a depth-first left-corner parser if they apply as usual.
+And a right-to-left depth-first left-corner parser has no use for left-corner predictions since the predicted material has already been inferred in a bottom-up fashion anyways.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \Tree
+            [.\Lab{S}{5}{11}
+                [.\Lab{NP}{3}{5}
+                    [.\Lab{Det}{2}{3}
+                        \Lab{the}{1}{2}
+                    ]
+                    [.\Lab{N}{3}{5}
+                        \Lab{anvil}{4}{5}
+                    ]
+                ]
+                [.\Lab{VP}{5}{11}
+                    [.\Lab{Vt}{7}{8}
+                        \Lab{hit}{6}{7}
+                    ]
+                    [.\Lab{NP}{8}{11}
+                        [.\Lab{PN}{10}{11}
+                            \Lab{Daffy}{9}{10}
+                        ]
+                    ]
+                ]
+            ]
+    \end{tikzpicture}
+\end{center}
+
+\begin{exercise}
+    What would the annotated trees look like for
+    %
+    \begin{itemize}
+        \item a left-to-right breadth-first left-corner parser where
+            \begin{itemize}
+                \item reading a word can immediately be followed by a single reduction step,
+                \item reducing $X$ to $Y$ cannot be immediately followed by a left-corner prediction using $Y$.
+            \end{itemize}
+        \item a left-to-right breadth-first left-corner parser where
+            \begin{itemize}
+                \item reading a word can be immediately followed by a single reduction step,
+                \item reducing $X$ to $Y$ is immediately followed by a left-corner prediction using $Y$.
+            \end{itemize}
+        \item a right-to-left depth-first left-corner parser.
+    \end{itemize}
+\end{exercise}
+
+\section{Formal Specification}
+\label{sec:LeftCorner_Formal}
+
+\subsection{Standard Left-Corner Parser}
+\label{sub:LeftCorner_Standard}
+
+Since the usual parameters make little sense for a left-corner parser, no control structure is needed and it suffices to define the parsing schema.
+The parser has to keep track of four distinct pieces of information:
+%
+\begin{itemize}
+    \item the current position in the string,
+    \item any identified nodes $l_i$ that have not been used up by any inference rules yet,
+    \item which phrases $p_1, \ldots, p_n$ need to be built according to the left-corner prediction using some $l_i$, and
+    \item which phrase is built from $l_i, p_i, \ldots, p_n$
+\end{itemize}
+%
+Our items take the form $[i, \alpha \psep \beta]$, where
+%
+\begin{itemize}
+    \item $i$ is the current position in the string,
+    \item $\alpha$ is the list of identified unused nodes, and
+    \item $\beta$ is a list of labeled lists of phrases to be built.
+\end{itemize}
+%
+For instance, the item [1, \psep [\tsb{NP} N]] encodes that if position 1 is followed by an N, we can build an NP\@.
+
+The parser has a single axiom $[0,\psep]$, and its goal is $[n, S \psep]$.
+So the parser has to move from the initial to the last position of the string and end up identifying S\@.
+The parser uses five rules, four of which are generalizations of the familiar top-down and bottom-up rules.
+
+\begin{prooftree}
+    \AxiomC{$[i, \alpha \psep \beta]$}
+    \LeftLabel{\textbf{Shift}\qquad}
+    \RightLabel{$a = w_{i}$}
+    \UnaryInfC{$[i+1, \alpha a \psep \beta]$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{$[i, \alpha \gamma \psep \beta]$}
+    \LeftLabel{\textbf{Reduce}\qquad}
+    \RightLabel{$N \rewrite \gamma \in R$}
+    \UnaryInfC{$[i, \alpha N \psep \beta]$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{$[i, \alpha N \psep [_M\ N \gamma ]\ \beta]$}
+    \LeftLabel{\textbf{Scan}\qquad}
+    \UnaryInfC{$[i, \alpha \psep [_M\ \gamma ]\ \beta]$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{$[i, \alpha N \psep \beta]$}
+    \LeftLabel{\textbf{Predict}\qquad}
+    \RightLabel{$M \rewrite N \gamma \in R$}
+    \UnaryInfC{$[i, \alpha \psep [_M\ \gamma ]\ \beta]$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{$[i, \alpha \psep [_M\ ]\ \beta]$}
+    \LeftLabel{\textbf{Complete}\qquad}
+    \UnaryInfC{$[i, \alpha M \psep \beta]$}
+\end{prooftree}
+
+The shift rule reads in new input, and the reduce rule replaces the right-hand side of a rewrite rule by its left-hand side, thereby building structure in the usual bottom-up fashion.
+The scan rule eliminates a predicted symbol against an existing one, just like the top-down scan rule eliminates a predicted terminal symbol if a matching symbol can be found in the input at this position.%
+\footnote{
+    The scan rule of the recursive descent parser can decomposed into a shift rule and a second rule that closely mirrors the scan rule above:
+    %
+    \begin{prooftree}
+        \AxiomC{$[i, \psep \beta]$}
+        \LeftLabel{\textbf{Shift}\qquad}
+        \RightLabel{$a = w_{i}$}
+        \UnaryInfC{$[i+1, a \psep \beta]$}
+    \end{prooftree}
+    %
+    \begin{prooftree}
+        \AxiomC{$[i, a \psep a \beta]$}
+        \LeftLabel{\textbf{Scan}\qquad}
+        \UnaryInfC{$[i,\psep \beta]$}
+    \end{prooftree}
+}
+
+The predict rule necessarily extends the prediction mechanism of a standard top-down parser since left-corner prediction proceeds both bottom-up, inferring the symbol to the left of the rewrite arrow, and top-down, inferring the sister nodes to the right.
+An existing left-corner $N$ is removed, and instead we add to $\beta$ a list that is labeled with the conjectured mother of $N$ and contains the conjectured sisters of $N$.
+The completion rule, finally, states that once we've completely exhausted a list --- i.e.\ all the conjectured siblings have been identified --- the phrase that can be built from the elements in this list is promoted from a mere conjecture to a certainty, which technically amounts to pushing it to the left side of $\psep$.
+
+\begin{examplebox}[Left-corner parse of \emph{The anvil hit Daffy}]
+    \phantom{a}
+    \begin{center}
+        \begin{tabular}{r|l}
+            \textbf{parse item} & \textbf{inference rule}\\
+            $\lbrack$0,\psep,]              & axiom\\
+            $\lbrack$1,the \psep,]          & shift\\
+            $\lbrack$1,Det \psep,]          & reduce(6)\\
+            $\lbrack$1,\psep [\tsb{NP} N]]       & predict(3)\\
+            $\lbrack$2,anvil \psep [\tsb{NP} N]] & shift\\
+            $\lbrack$2,N \psep [\tsb{NP} N]] & reduce(7)\\
+            $\lbrack$2,\psep [\tsb{NP}]] & scan\\
+            $\lbrack$2,NP \psep ] & complete\\
+            $\lbrack$2,\psep [\tsb{S} VP]] & predict(1)\\
+            $\lbrack$3,hit \psep [\tsb{S} VP]] & shift\\
+            $\lbrack$3,V \psep [\tsb{S} VP]] & reduce(10)\\
+            $\lbrack$3,\psep [\tsb{VP} NP] [\tsb{S} VP]] & predict(5)\\
+            $\lbrack$4,Daffy \psep [\tsb{VP} NP] [\tsb{S} VP]] & shift\\
+            $\lbrack$4,PN \psep [\tsb{VP} NP] [\tsb{S} VP]] & reduce(8)\\
+            $\lbrack$4,NP \psep [\tsb{VP} NP] [\tsb{S} VP]] & reduce(2)\\
+            $\lbrack$4,\psep [\tsb{VP}] [\tsb{S} VP]] & scan\\
+            $\lbrack$4, VP \psep [\tsb{S} VP]] & complete\\
+            $\lbrack$4,\psep [\tsb{S}]] & scan\\
+            $\lbrack$4,S \psep] & complete\\
+        \end{tabular}
+    \end{center}
+\end{examplebox}
+
+The choice of $\psep$ as a separator with identified material to the left and predicted material to the right is not accidental.
+Recall that the recursive descent parser is a purely predictive parser, and in all its parse items $\psep$ occurred to the very left.
+So the predicted material was trivially to the right of $\psep$.
+Similarly, the shift reduce parser is completely free of any predictions, and the material built via shift and reduce was always to the left of $\psep$.
+Viewed from this perspective, the inference rules of the left-corner parser highlight its connections to top-down and bottom-up parsing (cf.\ Tab.~\ref{tab:LeftCorner_ParserComparison}).
+
+\begin{table}[tbph]
+    \begin{tabular}{rp{2em}ccc}
+             & & \textbf{Top-Down}
+             & \textbf{Bottom-Up}
+             & \textbf{Left-Corner}\\[1em]
+             \hline
+             \\[1em]
+        \textbf{Axiom} & &
+            \(
+                [0,\psep S]
+            \)
+            &
+            \(
+                [,0]
+            \)
+            &
+            \(
+                [0,\psep]
+            \)
+            \\[2em]
+        \textbf{Goal} & &
+            \(
+                [n,\psep]
+            \)
+            &
+            \(
+                [S\psep,n]
+            \)
+            &
+            \(
+                [n,S \psep]
+            \)
+            \\[2em]
+        \textbf{Scan} & &
+            \(
+                \dfrac{[i, \alpha \psep a \beta]}%
+                    {[i+1, \alpha \psep \beta]}
+            \)
+            &
+            &
+            \(
+                \dfrac{[i, \alpha N \psep [_M\ N \gamma ]\ \beta]}%
+                    {[i, \alpha \psep [_M\ \gamma ]\ \beta]}
+            \)
+            \\[2em]
+        \textbf{Shift} & &
+            &
+            \(
+                \dfrac{[\alpha \psep \beta, j]}%
+                    {[\alpha a \psep \beta, j+1]}
+            \)
+            &
+            \(
+                \dfrac{[i, \alpha \psep \beta]}%
+                    {[i+1, \alpha a \psep \beta]}
+            \)
+            \\[2em]
+        \textbf{Predict} & &
+            \(
+                \dfrac{[i, \alpha \psep N \beta]}%
+                    {[i, \alpha \psep \gamma \beta]}
+            \)
+            &
+            &
+            \(
+                \dfrac{[i, \alpha N \psep \beta ]}%
+                    {[i, \alpha \psep [_M\ \gamma ]\ \beta ]}
+            \)
+            \\[2em]
+        \textbf{Reduce} & &
+            &
+            \(
+                \dfrac{[\alpha \gamma \psep \beta, j]}%
+                    {[\alpha N \psep \beta, j]}
+            \)
+            &
+            \(
+                \dfrac{[i, \alpha \gamma \psep \beta]}%
+                    {[i, \alpha N \psep \beta]}
+            \)
+            \\[2em]
+        \textbf{Complete} & &
+            &
+            & 
+            \(
+                \dfrac{[i, \alpha \psep [_M\ ]\ \beta]}%
+                    {[i, \alpha M \psep \beta ]}
+            \)
+    \end{tabular}
+\caption{Comparison of recursive descent, shift reduce, and left-corner parser}
+\label{tab:LeftCorner_ParserComparison}
+\end{table}
+
+\subsection{Generalized Left-Corner Parsing}
+\label{sub:LeftCorner_Generalized}
+
+The left-corner parser combines top-down and bottom-up in a specific manner: one symbol needs to be found bottom-up before a top-down prediction can take place.
+This weighting of bottom-up and top-down can be altered by changing the number of symbols that need to be present.
+That is to say, the left-corner of a rule is no longer just the leftmost symbol of its right side, but rather a prefix of the right side.
+For instance, if the number is increased to $2$, then NP \rewrite\ Det A N could be used to predict N and NP only after Det and A have been identified.
+A left-corner parser where left corners are string of length $2$ or more is called a \emph{generalized left-corner parser}.
+It uses the same rules as a standard left-corner parser, except that the prediction rule is slightly modified.
+%
+\begin{prooftree}
+    \AxiomC{$[i, \alpha \delta \psep \beta]$}
+    \LeftLabel{\textbf{Predict}\qquad}
+    \RightLabel{$M \rewrite \delta \gamma \in R$}
+    \UnaryInfC{$[i, \alpha \psep [_M\ \gamma ]\ \beta]$}
+\end{prooftree}
+
+Notice the close connection to bottom-up and top-down parsing.
+A bottom-up parser is a generalized left-corner parser that requires $\delta\gamma = \delta$, so $M$ is predicted only if all its daughters have already been identified.
+In this case the prediction rule turns $[i, \alpha \delta \psep \beta]$ into $[i, \alpha \psep [_M] \beta]$, which the completion rule turns into $[i, \alpha M \psep]$.
+The reduce rule is just a shorthand for running these two rules immediately one after another.
+
+A top-down parser is similar to a generalized left-corner parser where $\delta$ is the empty string, so the prediction rule is never restricted by a left corner.
+This analogy is not completely right, however, because such a generalized left-corner parser can predict any rule at any given point, whereas the top-down parser must make predictions that are licit rewritings of non-terminal symbols in the parse items.
+
+Still, generalized left-corner parsing is a straight-forward extension of left-corner parsing that allows altering how much weight is put on top-down prediction versus bottom-up confirmation.
+
+\section{Psycholinguistic Adequacy}
+\label{sec:LeftCorner_Evaluation}
+
+\begin{exercise}
+    Show that just like top-down and bottom-up parsers, left-corner parsers struggle with garden path sentences.
+\end{exercise}
+
+\begin{exercise}
+    Recall the two structures that were proposed for \emph{John's father's car's exhaust pipe disappeared} in exercises~\ref{ex:BottomUp_LeftEmbedding} and~\ref{ex:BottomUp_RightEmbedding}.
+    Write down the left-corner parse tables for both structures.
+    Based on these parse tables, annotate the trees with subscripts and superscripts in the usual fashion.
+    Determine the payload as well as MaxTen and MaxSum.
+    How does the left-corner parser fare in comparison to the recursive descent and shift reduce parsers?
+\end{exercise}
+
+\begin{exercise}
+    Are merely local syntactic coherence effects expected with a left-corner parser?
+\end{exercise}

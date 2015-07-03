@@ -1,0 +1,58 @@
+% English SRC, promotion analysis, no head movement, antisymmetric
+% Thomas Graf
+
+\begin{tikzpicture}[
+        scale = \TreeScale,
+        move/.style = {dashed,blue},
+        level 1+/.style = { level distance = \TreeDistanceValue }
+    ]
+    \Tree
+        [.\Lab{CP}{0}{1}
+            [.\Lab{C}{1}{2} ]
+            [.\node(TP1){\Lab{TP}{1}{3}};
+                [.\Lab{T$'$}{3}{4}
+                    [.\BLab{T}{4}{23} ]
+                    [.\Lab{VP}{4}{5}
+                        [.\node(TP1Subj){\Lab{DP}{5}{6}};
+                            [.\Lab{the}{6}{7} ]
+                            [.\node(RCtarget){\Lab{NP}{6}{8}};
+                                [.\Lab{N$'$}{8}{9}
+                                    [.\BLab{who}{9}{16} ]
+                                    [.\node(TP2){\Lab{TP}{9}{10}};
+                                        [.\Lab{T$'$}{10}{11}
+                                            [.\BLab{T}{11}{17} ]
+                                            [.\Lab{VP}{11}{12}
+                                                [.\node(RCsource){\Lab{r}{12}{13}};
+                                                    [.\Lab{D}{13}{14} ]
+                                                    [.\Lab{reporter}{13}{15} ]
+                                                ]
+                                                [.\IBLab{V$'$}{12}{18}
+                                                    [.\Lab{attacked}{18}{19} ]
+                                                    [.\Lab{DP}{18}{20}
+                                                        [.\Lab{the}{20}{21} ]
+                                                        [.\Lab{senator}{20}{22} ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                        [.\IBLab{V$'$}{5}{24}
+                            [.\Lab{admitted}{24}{25} ]
+                            [.\Lab{DP}{24}{26}
+                                [.\Lab{the}{26}{27} ]
+                                [.\Lab{error}{26}{28} ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]												
+        ]
+
+    \draw[move,bend left] (TP1Subj) to (TP1);
+    \draw[move,bend left=50] (RCsource) to (TP2);
+    \draw[move,bend left=30] (RCsource) to (RCtarget.south west);
+
+\end{tikzpicture}

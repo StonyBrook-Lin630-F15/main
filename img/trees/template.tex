@@ -1,0 +1,149 @@
+% Template to be used at writelatex.com
+%
+% Workflow
+%  - edit tikzpicture to produce annotated parse tree
+%  - check output via writelatex
+%  - copy paste all the code from \begin{tikzpicture} to \end{tikzpicture} into a new file
+%  - add your full name as a comment at the top of the file
+%  - add description of parse as comment to the top of the file (mention at least the parameters below)
+%  - name file according to following template
+%     LANG_RC_ANALYSIS_MOVE_LCA.tex
+%    where
+%         LANG in {eng, jap, chi, kor} % what language?
+%         RC in {src, orc} % what type of relative clause?
+%         ANALYSIS in {prom, wh, bind} % what type of relative clause analysis? promotion, wh-movement, or just bound pro without movement?
+%         MOVE in {head,nohead} % do we indicate head movement?
+%         LCA in {lca,nolca} % are the trees antisymmetric?
+%  - upload file to tex folder in Google drive
+
+%%%%%%%%%%%%%%
+%  Preamble  %
+%%%%%%%%%%%%%%
+\documentclass[12pt]{article}
+
+\usepackage{fixltx2e}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[a3paper,margin=.75cm]{geometry}
+\usepackage{amsmath}
+\usepackage{tikz-qtree}
+
+% you don't need to specify features in the derivation tree,
+% but if you think it's necessary for some reason, use the MG commands below
+
+% MG feature types
+\newcommand{\FeatFont}[1]{\ensuremath{\mathrm{#1}}} % typeset features in math roman
+\newcommand{\fcat}[1]{\ensuremath{\FeatFont{#1}}\ } % category feature
+\newcommand{\fsel}[1]{\ensuremath{\mathop{=}\FeatFont{#1}\ }} % selector feature
+\newcommand{\flcr}[1]{\ensuremath{\mathop{+}\FeatFont{#1}\ }} % licensor feature
+\newcommand{\flce}[1]{\ensuremath{\mathop{-}\FeatFont{#1}\ }} % licensee feature
+
+% MG lexical item
+% Format:
+%	argument 1: phonetic exponent
+%	argument 2: feature string (use feature macros)
+% Example:
+%	an empty C-head: \mlex{\emptystring}{\fsel{T} \fcat{C}}
+%   wh-moving which: \mlex{which}{\fsel{N} \fcat{D} \flce{wh}}
+\newcommand{\mlex}[2]{\ensuremath{\text{#1} ::\thinspace #2}}
+
+% empty string
+\newcommand{\emptystring}{\ensuremath{\varepsilon}}
+
+% Labeling Macros
+% Format:
+%	argument 1 = node label
+%	argument 2 = step at which node is put into memory
+% 	argument 3 = step at which node is flushed from memory
+% Example:
+%	Merge node, not held in memory: \Lab{Merge}{5}{6}
+%   lexical item, held in memory: \BLab{the}{2}{15}
+%   interior node, held in memory: \IBLab{TP}{2}{15}
+\newcommand{\Lab}[3]{\textsuperscript{#2}#1\textsubscript{#3}} % for normal nodes
+\newcommand{\BLab}[3]{\textsuperscript{#2}#1\boxed{\textsubscript{#3}}} % for boxed leaves
+\newcommand{\IBLab}[3]{\textsuperscript{#2}#1\boxed{\textsubscript{#3}}} % for boxed interior nodes
+
+% Derivation Tree Typesetting
+\newcommand{\TreeSize}{}   % set font size for node labels
+\newcommand{\TreeScale}{1} % set scaling factor of entire image
+\newcommand{\TreeDistanceValue}{2.5em} % vertical distance between nodes
+
+
+%%%%%%%%%%%%%
+%  Content  %
+%%%%%%%%%%%%%
+
+\begin{document}
+
+% annotated MG derivation
+% tikz-qtree primer:
+%    - trees are written as labeled bracketing via syntax [.LABEL subtree1 subtree2 ... ]
+%    - for LABEL, use one of the tree labeling macros from the preamble
+%    - for bar levels, the ' must be surrounded by $, i.e. $'$ (otherwise we get an apostrophe)
+%    - brackets must not touch (something like ]] will give compilation errors)
+%    - to add movement branches, you need to name nodes
+%           [.\node(NameOfNode){NodeLabel};
+%    - don't forget about the semicolon in this case
+%    - use descriptive names!
+%    - you can then draw movement branches with the draw command
+%           \draw[move,DIRECTION] (source) to (target);
+%      where DIRECTION in {bend left, bend right}
+%    - the direction can be followed by =n, n in [0,360], which defines the degree of curving
+
+\begin{tikzpicture}[
+        scale = \TreeScale,
+        move/.style = {dashed,blue},
+        level 1+/.style = { level distance = \TreeDistanceValue }
+    ]
+    \Tree
+        [.\Lab{CP}{0}{1}
+            [.\Lab{C}{1}{2} ]
+            [.\node(TP1){\Lab{TP}{1}{3}};
+                [.\Lab{T$'$}{3}{4}
+                    [.\BLab{T}{4}{23} ]
+                    [.\Lab{VP}{4}{5}
+                        [.\node(TP1Subj){\Lab{DP}{5}{6}};
+                            [.\Lab{the}{6}{7} ]
+                            [.\node(RCtarget){\Lab{NP}{6}{8}};
+                                [.\Lab{N$'$}{8}{9}
+                                    [.\BLab{who}{9}{16} ]
+                                    [.\node(TP2){\Lab{TP}{9}{10}};
+                                        [.\Lab{T$'$}{10}{11}
+                                            [.\BLab{T}{11}{17} ]
+                                            [.\Lab{VP}{11}{12}
+                                                [.\node(RCsource){\Lab{r}{12}{13}};
+                                                    [.\Lab{D}{13}{14} ]
+                                                    [.\Lab{reporter}{13}{15} ]
+                                                ]
+                                                [.\IBLab{V$'$}{12}{18}
+                                                    [.\Lab{attacked}{18}{19} ]
+                                                    [.\Lab{DP}{18}{20}
+                                                        [.\Lab{the}{20}{21} ]
+                                                        [.\Lab{senator}{20}{22} ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                        [.\IBLab{V$'$}{5}{24}
+                            [.\Lab{admitted}{24}{25} ]
+                            [.\Lab{DP}{24}{26}
+                                [.\Lab{the}{26}{27} ]
+                                [.\Lab{error}{26}{28} ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]												
+        ]
+
+    \draw[move,bend left] (TP1Subj) to (TP1);
+    \draw[move,bend left=50] (RCsource) to (TP2);
+    \draw[move,bend left=30] (RCsource) to (RCtarget.south west);
+
+\end{tikzpicture}
+
+\end{document}

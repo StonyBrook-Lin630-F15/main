@@ -1,0 +1,426 @@
+\chapter{Top-Down Parsing}
+\label{cha:TopDown}
+
+Top-down parsing is arguably the simplest parsing model.
+In fact, it is so intuitive that syntax students, for example, have a tendency to automatically use this algorithm when asked to determine if a grammar generates a given sentence.
+That's because top-down parsing is very close to the idea of phrase structure grammars as top-down generators.
+
+\section{Intuition}
+\label{sec:TopDown_Intuition}
+Suppose you are given the following CFG.
+%
+\begin{center}
+    \begin{tabular}{rrlp{3em}rrl}
+        1)  & S   & \rewrite\ NP VP               &  & 
+        6)  & Det & \rewrite\ a | the
+        \\
+        2)  & NP  & \rewrite\ PN                  &  & 
+        7)  & N   & \rewrite\ car | truck | anvil
+        \\
+        3)  & NP  & \rewrite\ Det N               &  & 
+        8)  & PN  & \rewrite\ Bugs | Daffy
+        \\
+        4)  & VP  & \rewrite\ Vi                  &  & 
+        9)  & Vi  & \rewrite\ fell over
+        \\
+        5)  & VP  & \rewrite\ Vt NP               &  & 
+        10) & Vt  & \rewrite\ hit
+        \\
+    \end{tabular}
+\end{center}
+%
+When asked to show that this grammar generates the sentence \emph{The anvil hit Daffy}, you might draw a tree.
+But a different method is to provide a tabular depiction of the rewrite process.
+%
+\begin{center}
+    \begin{tabular}{r|l}
+        \textbf{string} & \textbf{rule}\\
+        S                   & start\\
+        NP VP               & S \rewrite\ NP VP\\
+        Det N VP            & NP \rewrite\ Det N\\
+        the N VP            & Det \rewrite\ the\\
+        the anvil VP        & N \rewrite\ anvil\\
+        the anvil Vt NP     & VP \rewrite\ Vt NP\\
+        the anvil hit NP    & Vt \rewrite\ hit\\
+        the anvil hit PN    & NP \rewrite\ PN\\
+        the anvil hit Daffy & PN \rewrite Daffy
+    \end{tabular}
+\end{center}
+%
+Of course the rewrite rules could also be applied in other orders.
+%
+\begin{center}
+    \begin{tabular}{r|l}
+        \textbf{string}     & \textbf{rule}\\
+        S                   & start\\
+        NP VP               & S \rewrite\ NP VP\\
+        NP Vt NP            & VP \rewrite\ Vt NP\\
+        NP Vt PN            & NP \rewrite\ PN\\
+        NP Vt Daffy         & PN \rewrite Daffy\\
+        NP hit Daffy        & Vt \rewrite\ hit\\
+        Det N hit Daffy     & NP \rewrite\ Det N\\
+        Det anvil hit Daffy & N \rewrite\ anvil\\
+        the anvil hit Daffy & Det \rewrite\ the
+    \end{tabular}
+    %
+    \hspace{1em}
+    %
+    \begin{tabular}{r|l}
+        \textbf{string}     & \textbf{rule}\\
+        S                   & start\\
+        NP VP               & S \rewrite\ NP VP\\
+        Det N VP            & NP \rewrite\ Det N\\
+        Det N Vt NP         & VP \rewrite\ Vt NP\\
+        the N Vt NP         & Det \rewrite\ the\\
+        the anvil Vt NP     & N \rewrite\ anvil\\
+        the anvil hit NP    & Vt \rewrite\ hit\\
+        the anvil hit  PN   & NP \rewrite\ PN\\
+        the anvil hit Daffy & PN \rewrite Daffy
+    \end{tabular}
+\end{center}
+%
+In all three cases we proceed top-down: non-terminals are replaced by a string of terminals and\slash or non-terminals.
+From the perspective of phrase structure trees, the trees are growing from the root towards the leafs.
+The difference between the three tables is the order in which non-terminals are rewritten.
+%
+\begin{itemize}
+    \item Table 1: depth-first, left-to-right
+    \item Table 2: depth-first, right-to-left
+    \item Table 3: breadth-first, left-to-right
+\end{itemize}
+%
+\begin{description}
+    \item[depth-first] rewrite some symbol that was introduced during the previous rewriting step
+    \item[breadth-first] before rewriting a symbol introduced during rewriting step $j$, all symbols that were introduced at rewriting step $i$ must have been rewritten, for every $i < j$
+    \item[left-to-right] if several symbols are eligible to be rewritten, rewrite the leftmost one
+    \item[right-to-left] if several symbols are eligible to be rewritten, rewrite the rightmost one
+\end{description}
+
+We can visualize the differences between these strategies by annotating phrase structure trees with indices to indicate when a symbol is first introduced (prefix) and when it is rewritten (suffix).
+For terminal symbols, which are never rewritten, we stipulate that the suffix is one higher than the prefix.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \Tree
+            [.\Lab{S}{1}{2}    
+                [.\Lab{NP}{2}{3}
+                    [.\Lab{Det}{3}{4}
+                        \Lab{the}{4}{5}
+                    ]
+                    [.\Lab{N}{3}{6}
+                        \Lab{anvil}{6}{7}
+                    ]
+                ]
+                [.\Lab{VP}{2}{8}
+                    [.\Lab{Vt}{8}{9}
+                        \Lab{hit}{9}{10}
+                    ]
+                    [.\Lab{NP}{8}{11}
+                        [.\Lab{PN}{11}{12}
+                            \Lab{Daffy}{12}{13}
+                        ]
+                    ]
+                ]
+            ]
+    \end{tikzpicture}
+
+    \begin{tikzpicture}
+        \Tree
+            [.\Lab{S}{1}{2}    
+                [.\Lab{NP}{2}{9}
+                    [.\Lab{Det}{9}{12}
+                        \Lab{the}{12}{13}
+                    ]
+                    [.\Lab{N}{9}{10}
+                        \Lab{anvil}{10}{11}
+                    ]
+                ]
+                [.\Lab{VP}{2}{3}
+                    [.\Lab{Vt}{3}{7}
+                        \Lab{hit}{7}{8}
+                    ]
+                    [.\Lab{NP}{3}{4}
+                        [.\Lab{PN}{4}{5}
+                            \Lab{Daffy}{5}{6}
+                        ]
+                    ]
+                ]
+            ]
+    \end{tikzpicture}
+    %
+    \hspace{1em}
+    %
+    \begin{tikzpicture}
+        \Tree
+            [.\Lab{S}{1}{2}    
+                [.\Lab{NP}{2}{3}
+                    [.\Lab{Det}{3}{5}
+                        \Lab{the}{5}{6}
+                    ]
+                    [.\Lab{N}{3}{7}
+                        \Lab{anvil}{7}{8}
+                    ]
+                ]
+                [.\Lab{VP}{2}{4}
+                    [.\Lab{Vt}{4}{9}
+                        \Lab{hit}{9}{10}
+                    ]
+                    [.\Lab{NP}{4}{11}
+                        [.\Lab{PN}{11}{12}
+                            \Lab{Daffy}{12}{13}
+                        ]
+                    ]
+                ]
+            ]
+    \end{tikzpicture}
+\end{center}
+%
+\begin{exercise}
+    Draw the table for a breadth-first, right-to-left parser, and the corresponding annotated phrase structure tree.
+\end{exercise}
+%
+\begin{exercise}
+    Consider the sentence \emph{Bugs fell over}.
+    Draw the tables for a left-to-right depth-first strategy and left-to-right breadth-first strategy, and draw the corresponding annotated phrase structure trees.
+    Do the two strategies differ at all over such a short sentence?
+    If so, how, and at which nodes?
+\end{exercise}
+
+\section{Formal Specification}
+\label{sec:TopDown_Formal}
+
+\subsection{Sentences as Indexed Strings}
+\label{sub:TopDown_Strings}
+
+The input to the parser is just a sequence of words, i.e.\ a string.
+We adopt the standard convention for numbering positions in a string, i.e.\ the $i$-th word in the string occurs between positions $i-1$ and $i$.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \foreach \Position in {0,1,2,3,4}
+            \node[draw,circle] (\Position) at ($\Position*(6em,0)$) {\Position};
+
+        \foreach \Word/\Start/\End in { the/0/1,
+                                        anvil/1/2,
+                                        hit/2/3,
+                                        Daffy/3/4%
+                                      }
+            \draw[->] (\Start) to node [above] {\Word} (\End);
+    \end{tikzpicture}
+\end{center}
+%
+Given a string $w$ that consists of $n$ words, each word can be referenced by the number to its left.
+If $w = \emph{the anvil hit Daffy}$, $w_0 = \text{\emph{the}}$ and $w_3 = \text{\emph{Daffy}}$, for instance.
+Notice that if the grammar allows for empty heads, an input sentence can be mapped to infinitely many such strings depending on where one posits empty heads.
+
+\subsection{Parsing Schema}
+\label{sub:TopDown_Schema}
+The parsing schema can be easily stated in terms of logical inference rules.
+This idea was originally called \emph{parsing as deduction} \citep{PereiraWarren83, Shieber.etal95} and was later refined by \citet{Sikkel97}.
+Parsing as deduction makes it very easy to see what distinguishes different parsing schema and put various control structures on top of them.
+It's also the foundation for \emph{semiring parsing} \citep{Goodman99}, which provides an abstract perspective that unifies recognizers and parsers, among other things.
+
+Given a CFG $G \is \tuple{N,T,S,R}$ and input string $w = w_1 \cdots w_n$, our \emph{items} take the form $[i,\beta,j]$, where
+%
+\begin{itemize}
+    \item $\beta \in (N \cup T)^*$ is a string of terminal and\slash or non-terminal symbols, and
+    \item  $i$ and $j$ are positions in the string such that $0 \leq i < j \leq n+1$.
+\end{itemize}
+%
+An item encodes the conjecture that the substring spanning from $i$ to $j$ can be generated from $\beta$ via $G$.
+Our only \emph{initial item} (also called \emph{axiom}) is $[0,S,n]$, which denotes that the grammar generates the string spanning from $0$ to $n$.
+As our \emph{final item} (also called \emph{goal}) we require $[n,,n]$.
+
+The parser uses two inference rules; one for scanning, the other one for top-down prediction. 
+%
+\begin{prooftree}
+    \AxiomC{$[i, a \beta ,j]$}
+    \LeftLabel{\textbf{Scan}\qquad}
+    \RightLabel{$a = w_i$}
+    \UnaryInfC{$[i+1, \beta ,j]$}
+\end{prooftree}
+%
+\begin{prooftree}
+    \AxiomC{$[i,\alpha N \beta,j]$}
+    \LeftLabel{\textbf{Predict}\qquad}
+    \RightLabel{$N \rewrite \gamma \in R$}
+    \UnaryInfC{$[i, \alpha \gamma \beta,j]$}
+\end{prooftree}
+%
+The scanning rule tells us that the starting position of an item can be moved one to the right if the item starts with a terminal symbol that matches the word in the input string at the corresponding position.
+The predict rule produces a new item from an old by rewriting one the one non-terminal symbols using a production of $G$.
+
+
+\begin{examplebox}[Top-down parse of \emph{The anvil hit Daffy}]
+    Let $G$ be the grammar at the beginning of the handout.
+    Then a depth-first, left-to-right parse of \emph{The anvil hit Daffy} will proceed as follows, where predict($n$) denotes a prediction step using rule $n$.
+    %
+    \begin{center}
+        \begin{tabular}{r|l}
+            \textbf{parse item} & \textbf{inference rule}\\
+            $\lbrack$0,S,4] & axiom\\
+            $\lbrack$0,NP VP,4] & predict(1)\\
+            $\lbrack$0,Det N VP,4] & predict(3)\\
+            $\lbrack$0,the N VP,4] & predict(6)\\
+            $\lbrack$1,N VP,4] & scan\\
+            $\lbrack$1,truck VP,4] & predict(7)\\
+            $\lbrack$2,VP,4] & scan\\
+            $\lbrack$2,Vt NP,4] & predict(5)\\
+            $\lbrack$2,hit NP,4] & predict(10)\\
+            $\lbrack$3,NP,4] & scan\\
+            $\lbrack$3,PN,4] & predict(2)\\
+            $\lbrack$3,Daffy,4] & predict(8)\\
+            $\lbrack$4,,4] & scan
+        \end{tabular}
+    \end{center}
+    %
+    Note that the table above only shows the prediction steps leading to a successful parse.
+    The parser, on the other hand, applies every possible prediction step.
+    So from [0,NP VP,4], for instance, the parser not only predicts [0,Det N VP,4] via rule 3 but also [0,PN VP,4] via rule 2 since both can be applied to NP\@.
+\end{examplebox}
+
+As was discussed last time, the parsing schema only describes the starting point of the parser, the desired outcome, and which inference steps the parser may take to get from the former to the latter.
+It does not specify in which order these steps should be taken, nor how the parser handles multiple parses in parallel.
+This is left to the control structure and the data structures.
+
+\subsection{Control Structure}
+\label{sub:TopDown_Control}
+We can add a control structure to the parser to describe both the parsers directionality (left-to-right VS right-to-left) and its search method (depth-first VS breadth-first).
+There's many ways of specifying the control structure, but one simple option is to encode it in the parse schema.
+More precisely, we add a dot $\psep$ to the items to highlight which symbol should be expanded.
+The different strategies then correspond to different ways of moving the dot through the parse items.
+
+\paragraph{Left-to-right, depth-first}
+The only axiom is $[0,\psep S, n]$, and the only goal is $[n,\psep,n]$.
+%
+\begin{prooftree}
+    \AxiomC{$[i, \psep a \beta ,j]$}
+    \LeftLabel{\textbf{Scan}\qquad}
+    \RightLabel{$a = w_i$}
+    \UnaryInfC{$[i+1,\psep \beta ,j]$}
+\end{prooftree}
+%
+\begin{prooftree}
+    \AxiomC{$[i,\psep N \beta, j]$}
+    \LeftLabel{\textbf{Predict}\qquad}
+    \RightLabel{$N \rewrite \gamma \in R$}
+    \UnaryInfC{$[i,\psep \gamma \beta, j]$}
+\end{prooftree}
+%
+This type of top-down parser is also called a \emph{recursive descent parser}.
+
+\paragraph{Left-to-right, breadth-first}
+As before the axiom and goal are $[0,\psep S,n]$ and $[n,\psep,n]$, respectively.
+%
+\begin{prooftree}
+    \AxiomC{$[i, \psep a \beta ,j]$}
+    \LeftLabel{\textbf{Scan}\qquad}
+    \RightLabel{$a = w_i$}
+    \UnaryInfC{$[i+1,\psep \beta ,j]$}
+\end{prooftree}
+%
+\begin{prooftree}
+    \AxiomC{$[i,\alpha \psep N \beta, j]$}
+    \LeftLabel{\textbf{Predict}\qquad}
+    \RightLabel{$N \rewrite \gamma \in R$}
+    \UnaryInfC{$[i,\alpha \gamma \psep \beta, j]$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{$[i, \beta \psep, j]$}
+    \LeftLabel{\textbf{Return}\qquad}
+    \RightLabel{$\beta \in (N \cup T)^+$}
+    \UnaryInfC{$[i,\psep \beta, j]$}
+\end{prooftree}
+
+\begin{examplebox}[Breadth-first parse of \emph{The anvil hit Daffy}]
+    Once again we assume that $G$ is the grammar at the beginning of the handout.
+    %
+    \begin{center}
+        \begin{tabular}{r|l}
+            \textbf{parse item} & \textbf{inference rule}\\
+            $\lbrack$0,\psep S,4] & axiom\\
+            $\lbrack$0,NP VP\psep,4] & predict(1)\\
+            $\lbrack$0,\psep NP VP,4] & return\\
+            $\lbrack$0,Det N \psep VP,4] & predict(3)\\
+            $\lbrack$0,Det N Vt NP \psep,4] & predict(5)\\
+            $\lbrack$0,\psep Det N Vt NP,4] & return\\
+            $\lbrack$0,the \psep N Vt NP,4] & predict(6)\\
+            $\lbrack$0,the truck \psep Vt NP,4] & predict(7)\\
+            $\lbrack$0,the truck hit \psep NP,4] & predict(10)\\
+            $\lbrack$0,the truck hit PN \psep,4] & predict(2)\\
+            $\lbrack$0,\psep the truck hit PN,4] & return\\
+            $\lbrack$1,\psep truck hit PN,4] & scan\\
+            $\lbrack$2,\psep hit PN,4] & scan\\
+            $\lbrack$3,\psep PN,4] & scan\\
+            $\lbrack$3,Daffy \psep,4] & predict(8)\\
+            $\lbrack$3,\psep Daffy,4] & return\\
+            $\lbrack$4,\psep,4] & scan
+        \end{tabular}
+    \end{center}
+    %
+    And as before the parser actually predicts a lot more items, the table only lists those that are used in the successful parse.
+\end{examplebox}
+\begin{exercise}
+    Specify the right-to-left versions of the parsers above.
+\end{exercise}
+%
+\begin{exercise}
+    Parse the sentence \emph{The truck fell over} will all four different types of top-down parsers.
+    Use tables such as the ones in the previous two examples.
+\end{exercise}
+%
+\begin{exercise}
+    The left-to-right breadth-first parser differs slightly from the intuitive one we saw in Sec.~\ref{sec:TopDown_Intuition}.
+    In what respect?
+    And which one of the two versions would be more efficient for syntactic processing?
+    (Hint: draw a phrase structure tree as before and annotate the nodes according to when they are introduced by the parser, and when they are scanned or rewritten.
+    Then compare this tree to the one in Sec.~\ref{sec:TopDown_Intuition}.)
+\end{exercise}
+%
+\begin{exercise}
+    The parse items for all the parsers above include both the beginning and the end of the substring they span.
+    This seems a bad fit for incremental processing, where the length of the input string isn't known in advance.
+    Can we remove the index of the end position from the parse items and still have a functional parser?
+    What changes must be made to the inference rules, axioms, and goals?
+\end{exercise}
+
+\subsection{Data Structure}
+\label{sub:TopDown_Data}
+There's a myriad of different data structures a top-down parser may employ.
+We won't discuss them in great detail, but let's quickly summarize what the parser needs to be able to do.
+%
+\begin{itemize}
+    \item \textbf{Store history of successful parses}\\
+        Recall that a parser differs from a recognizer in that the latter only groups sentences into grammatical and ungrammatical whereas the former also assigns tree structures to well-formed sentences.
+        This structure can be easily inferred from the parse history, but this means that the parser needs to keep track of this history.
+    \item \textbf{Dealing with non-determinism}\\
+        We have implicitly assumed in our examples that the parser always makes the right decision with respect to which rewrite rule should be applied to which non-terminal symbol.
+        But this is of course not the case in practice.
+        Instead, the parser needs a way to deal with multiple parses, which means being able to store multiple parse histories.
+\end{itemize}
+%
+A single parse history can be stored as a table, for example.
+Multiple parses, then, are a table of such parse history tables.
+%
+\begin{exercise}
+    Formulate a strategy for converting a given parse history, stored as a table, into the corresponding phrase structure tree.
+\end{exercise}
+
+Smarter data structures can greatly improve the parser's efficiency.
+For instance, identical items can be shared across parse histories.
+That way, if the parser currently has three histories containing the item [4,\psep NP,20], the possible inferences from this item only need to be computed once rather than three times, which would be a waste of resources.
+Similarly, some of the inferences from this item can also be reused for a parse with item [2, \psep NP, 18].
+These techniques for sharing structure and memorizing the results of computation so that they can be reused somewhere else later on fall under the umbrella of \emph{dynamic programming} and \emph{tabulation}.
+They are very powerful ideas, but their addition does not alter the parsing schema or the control structure.
+
+However, the control structure needs to include some strategy for how distinct parses should be prioritized.
+For instance, one may finish one parse table before moving on to the next, or interleave the different tables.
+Often parse tables are put in a \emph{priority queue}.
+At each step, the first table in the queue is opened and one inference step is applied.
+Depending on the outcome of this inference, the table may be removed from the top spot and inserted somewhere else in the queue.
+Similarly, the inference step may have created new parse tables that also need to be inserted somewhere in the queue.
+
+
+\bibliographystyle{../../linquiry3}
+\bibliography{../../universal,../../graf}
