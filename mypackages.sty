@@ -78,7 +78,7 @@
 \usepackage{tikz-qtree}
 \usetikzlibrary{arrows,automata,backgrounds,calc,chains,decorations.pathmorphing,decorations.text,external,fadings,fit,matrix,scopes,shadows,shapes,through,trees}
 \tikzexternalize
-\tikzsetexternalprefix{figures/cache/}
+\tikzsetexternalprefix{build/tikz}
 
 \usepackage{marginnote}
 
@@ -102,6 +102,7 @@
 %			misc
 %=================================================================
 % \usepackage{minitoc}
+\usepackage{booktabs}
 \usepackage{mdwlist}
 \usepackage[titles]{tocloft}
 \usepackage{longtable}
@@ -110,6 +111,11 @@
 \usepackage{setspace}		% for single-spacing in floats and footnotes
 \usepackage{subcaption}
 \usepackage{xspace}
+
+%=================================================================
+%			programming
+%=================================================================
+\usepackage[chapter]{minted}
 
 
 %=================================================================
@@ -154,7 +160,7 @@
 % first we remove the standard headers and footers
 \fancyhf{}
 \fancyheadoffset[RO,LE]{\marginparsep+\marginparwidth}
-\fancyhead[C]{\HeaderFontSize Graf - Lin630, Fall 2014}
+\fancyhead[C]{\HeaderFontSize Graf - Lin630, Fall 2015}
 \fancyhead[RO,LE]{\bfseries \thepage}
 
 \fancypagestyle{plain}{

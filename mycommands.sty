@@ -1,7 +1,15 @@
 \ProvidesPackage{mycommands}
 
+% typeset strings
+\newcommand{\String}[1]{\ensuremath{\mathit{#1}}}
+
+\definecolor{codebg}{rgb}{0.95,0.95,0.95}
+\newminted{python}{linenos,mathescape,gobble=4,fontsize=\footnotesize,bgcolor=codebg,samepage=false}
+\newmintedfile{python}{linenos,mathescape,fontsize=\footnotesize,bgcolor=codebg,samepage=false}
+
 \addto\captionsenglish{\renewcommand{\chaptername}{Lecture}}
 \addto\captionsenglish{\renewcommand{\bibname}{References and Further Reading}}
+\def\thesection{\arabic{section}}
 
 \newcommand{\Note}[1]{\marginpar{\footnotesize\bfseries #1}}
 
@@ -41,6 +49,7 @@
 \newcommand{\cardof}[1]{\ensuremath{| #1 |}}
 
 \newcommand{\rewrite}{\ensuremath{\rightarrow}}
+\newcommand{\rewriteR}[1]{\ensuremath{\xrightarrow{#1}}}
 
 \newcommand{\mlex}[2]{\ensuremath{\text{#1} ::\thinspace \mathrm{#2}}}
 \newcommand{\SelEq}{\ensuremath{\mathop{=}}}

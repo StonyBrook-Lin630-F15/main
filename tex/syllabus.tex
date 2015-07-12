@@ -6,15 +6,17 @@
 
 \fcolorbox{gray!25}{gray!25}{
     \centering
-    \begin{tabular}{ll}
-        \textbf{Course:} Parsing and Syntactic Processing \quad\qquad\qquad&
+    \begin{tabular}{l@{\qquad}l}
+        \textbf{Course:} Parsing and Syntactic Processing &
         \textbf{Name:} Thomas Graf\\
-        \textbf{Course\#:} Lin630 (officially Lin650) &
+        \textbf{Course\#:} Lin630 (officially still Lin651) &
         \textbf{Email:} lin630@thomasgraf.net\\
-        \textbf{Time:} M 3:00--3:50, W 2:00--3:45&
-        \textbf{Office hours:} M11--12, F11--1, N249\\
-        \textbf{Course Website:} on Blackboard &
-        \textbf{Personal Website:} http://thomasgraf.net\\
+        \textbf{Time:} tbd &
+        \textbf{Office hours:} tba\\
+        \textbf{Location:} CompLab SBS N250&
+        \textbf{Office:} SBS N249\\
+        \textbf{Course Website:} \href{http://lin630.thomasgraf.net}{lin630.thomasgraf.net} &
+        \textbf{Personal Website:} \href{http://thomasgraf.net}{thomasgraf.net}
     \end{tabular}
 }
 
@@ -24,10 +26,12 @@
         \begin{itemize}
             \item What is the relation between competence and performance, grammar and parser?
             \item Are syntactic processing effects conditioned by the grammar?
-            \item What qualifies as a parser as opposed to a recognizer or a parsing procedure?
+            \item What qualifies as a parser as opposed to a recognizer or a parsing schema?
+            \item Can we use insights from syntactic processing research to speed up current parsing technology?
         \end{itemize}
+        %
         The first two are common questions for any processing course.
-        The third one hints at the special twist of this course: we approach these issues from a computational perspective!
+        The third and fourth one hint at the special twist of this course: we approach these issues from a computational perspective!
         Parsing theory is a big (albeit messy) area of computer science, there's tons of parsing models on the market.
         So let's bring all these insights to bear on how humans parse natural language.
 
@@ -37,47 +41,117 @@
             \item be familiar with a variety of common parsing models (top-down, bottom-up, left-corner, Earley, CYK)
             \item know the most common syntactic processing effects (in particular those related to memory usage)
             \item be able evaluate claims in the psycholinguistic literature from a computational perspective
-            \item possibly have a paper ready to publish (there's some low-hanging fruits here)
         \end{itemize}
 
     \item \textbf{Prerequisites}\\
     None beyond basic syntax skills --- you should be able to draw a reasonable tree for a sentence like \emph{The fact that the employee who the manager hired stole office supplies did not go unnoticed by the janitor}.
+    Knowledge of theoretical computational linguistics (e.g.\ as covered in Lin637) is helpful, but not necessary.
 \end{itemize}
 
 \section{Course Requirements}
 \begin{itemize}
-    \item\textbf{Readings}
+    \item \textbf{Homeworks}\\
+        There will be weekly homeworks, the solutions of which will be discussed during review sessions run by students retaking this course.
+        Homeworks are essential if you want to learn anything in this course --- you don't truly understand a parsing algorithm until you can carry it out yourself.
+        %
+    \item \textbf{Review Paper}\\
+        Write a critical review of a particular topic in parsing or syntactic processing that will be shared with and commented on by your class mates.
+        You have to get my approval for your topic and your list of readings by the end of week 8 (see the website for topic suggestions).
+        Your paper should be about 15 pages (letter paper, 1in margins, double spaced, 12pt), must be written in \LaTeX, and has to be completed by the end of week 12.
+        After you have gotten feedback from your colleagues, you must hand in a revised version by the end of finals week.
+
+        This assignment serves two purposes: you get experience writing review articles, and your colleagues get to learn about topics that weren't covered in class.
+        %
+    \item \textbf{Paper Evaluations}\\
+        %
+        For each review paper, you have to write a 1-page evaluation (it can be longer if necessary, but do not go beyond 3 pages).
+        Ideally, you should engage with the paper on an intellectual level, which means critiquing parts you disagree with, suggesting follow-up readings, or asking questions that were left unanswered.
+        But presentational issues such as grammar, style, or overall structure can also be brought up.
+
+        Think of this as you peer-reviewing a squib for a journal like \emph{Language and Linguistics Compass}, which is something you will have to do quite frequently as an academic.
+        It also hones your skills for giving detailed but polite and structured feedback in a corporate environment, e.g.\ as part of writing and maintaining documentation for a specialized piece of software.
+        %
+    \item \textbf{Workload per Credits}
+        %
         \begin{itemize}
-            \item Read every assigned paper (there won't be that many)
+            \item \emph{1 credit}: regular attendance, commenting on all review papers
+            \item \emph{2 credits}: the above, plus doing all the homeworks
+            \item \emph{3 credits}: the above, plus writing a review paper
         \end{itemize}
         %
-    \item \textbf{Homeworks}
-        \begin{itemize}
-            \item Short homeworks for each parsing model
-            \item Participate in discussion of selected homework exercises
-        \end{itemize}
-        %
-    \item \textbf{Paper (3 credits only)}\\
-        The second half of this course is meant to be run like a research group where we play around with current parsing models of Minimalist grammars.
-        Depending on how things develop, we might get a joint paper out of this, or maybe you'll work on something on your own.
-        At any rate you must hand in a paper of at least 8 pages with your name on it by the end of the course.
+        Students who are retaking this course for credit can instead volunteer to run some of the review sessions.
 \end{itemize}
 
 \section{Outline}
 
-\begin{longtable}{rlp{10cm}}
-    \emph{Wk} & \emph{Date} & \emph{Topic}\\\hline
-    1 & Aug 25, 27 & Marr's levels, parser VS grammar, phrase structure grammars\\
-    2 & Sep 3 & what is a parser (technical answer)\\
-    3 & Sep 8, 10 & top-down parsing\\
-    4 & Sep 15, 17 & bottom-up parsing\\
-    5 & Sep 22, 24 & left-corner parsing\\
-    6 & Sep 29, Oct 1 & Earley \& CKY\\
-    7 & Oct 6, 8 & everything our parsers miss\\
-    8 & Oct 13, 15 &  why the grammars aren't right\\
-    9 & Oct 27, 29 & Moving to Minimalist grammars\\
-    10 & Nov 3, 5 & Minimalist top-down parsing of derivation trees\\
-    11 & Nov 10, 12 & More on MG parsing\\
-    $\geq$12 & & research meetings
-\end{longtable}
-% chapter syllabus (end)
+This outline assumes that we meet twice a week for 90 minutes with a 10 minute break, plus a weekly recitation of 60 minutes.
+After week 9, we meet once a week for 60 minutes to brainstorm ideas for connecting parsing to protein folding.
+
+\begin{center}
+    \begin{tabular}{r@{\hspace{2em}}l@{\hspace{2em}}l@{\hspace{2em}}l}
+        \toprule
+        \textbf{Wk} & \textbf{Chap} & \textbf{Topic} & \textbf{Assignments}\\
+        \midrule
+        1 & \ref{cha:BigPicture},\ref{cha:ParserOverview} & Parsing across disciplines, modular view of parsing\\
+        2 & \ref{cha:TopDown},\ref{cha:TopDownEval}       & Top-down parsing\\
+        3 & \ref{cha:BottomUp},\ref{cha:ChartParsing}     & Bottom-up parsing, chart parsing intro\\
+        4 & \ref{cha:ChartParsing}                        & CKY and Earley\\
+        5 & \ref{cha:LeftCorner}                          & (Generalized) Left-corner parsing\\
+        6 & \ref{cha:Semiring}                            & Semiring parsing\\
+        7 & \ref{cha:BeyondCFG}                           & Moving beyond context-free grammars\\
+        8 & \ref{cha:MG-TopDown},\ref{cha:StablerParser}  & CFG-parsing of mildly-context sensitive formalisms & get topic approved\\
+        9 & \ref{cha:Deterministic},\ref{cha:Partial}     & LR parsing, partial parsing\\
+        \midrule
+        10 & & protein folding \\
+        11 & & protein folding \\
+        12 & & protein folding & review paper draft\\
+        13 & & protein folding \\
+        14 & & protein folding \\
+        15 & & protein folding & paper evaluations\\
+        \midrule
+        finals1 & & Q\&A session\\
+        finals2 & & & paper due\\
+        \bottomrule
+    \end{tabular}
+\end{center}
+
+\medskip
+The whole course has a time investment of 3 credits for 15 weeks, which totals $3*53*15=2385$ minutes.
+The distribution is shown below.
+\medskip
+%
+\begin{center}
+    \begin{tabular}{rrrr}
+        \toprule
+        \textbf{type}    & \textbf{number} & \textbf{minutes} & \textbf{total}\\
+        \midrule
+        lecture          & 18              & 80               & 1440\\
+        recitation       & 9               & 60               & 540\\
+        research meeting & 6               & 60               & 360\\
+        Q\&A session     & 1               &                  & 45\\
+        \midrule
+                         &                 &                  & \emph{2385}\\
+        \bottomrule
+    \end{tabular}
+\end{center}
+
+\section{Policies}
+
+\subsection{Contacting me}
+\begin{itemize}
+    \item Emails should be sent to \href{mailto://lin630@thomasgraf.net}{lin630@thomasgraf.net} to make sure they go to my high priority inbox.
+        Disregarding this policy means late replies and is a sure-fire way to get on my bad side.
+    \item Reply time $<24$h in simple cases, possibly more if meddling with bureaucracy is involved.
+    \item If you want to come to my office hours and anticipate a longer meeting, please email me so that we can set aside enough time and avoid collisions with other students.
+\end{itemize}
+
+\subsection{Special Needs}
+If you have any special needs that might impact your class performance (learning disabilities, impaired sight or hearing, etc.), please come to my office hours or contact me via mail so we can make suitable arrangements.
+
+
+\section{Online Component}
+Rather than Blackboard, I use github to distribute lecture notes and readings (yes, you have to print them yourself).
+The readings are in a private repository, so you need a github account to access them.
+If you don't have one already, you can create one for free (github does not collect any user data).
+Make sure to email me your username asap so that I can give you access to the repository.
+If you do not want to use github for some reason, you can drop by my office to make an offline copy of the readings.

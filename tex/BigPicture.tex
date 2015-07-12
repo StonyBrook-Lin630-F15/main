@@ -1,18 +1,81 @@
-\chapter{Big Picture}
+\chapter{The Big Picture: Why Parsing isn't Sentence Processing}
 \label{cha:BigPicture}
 
 On a purely technical level, parsing is the process of assigning a string of symbols a structural description according to some formal specification, usually a grammar.
-Syntactic processing refers to the act by which a speaker assigns a natural language sentence (conceptualized as a string of words, rather than, say, a continuous signal of sound waves) some syntactic structure. 
-However, it is not always clear that the structures assigned during syntactic processing are actually well-formed with respect to a native speaker's grammar.
-So syntactic processing is not exactly a standard case of parsing.
-It is a lot murkier than parsing, and whenever one ventures into murky territory, it's prudent to make out some landmarks as points of orientation.
+As such, parsing is not specific to language, any kind of problem where hidden structure has to be inferred from linearly arranged items may be considered an instance of parsing.
+This covers a very diverse range of processes such as discerning the structure of source code, segmenting a movie into its three acts, and even protein folding (the mechanism by which sequences of amino acids combine into these complex three-dimensional objects we call proteins).
+
+This general view of parsing is possible thanks to the semantic agnosticism of formal languages: pretty much everything can be conceptualized as a formal language.
+A program is a sentence of some programming language, and the programming language is defined via an alphabet (variables, functors, data structures, etc.) and a grammar that defines how the elements of the alphabet can be concatenated.
+The set of well-formed proteins is also a language that is defined by an (unfortunately still unknown) grammar with amino acids as its alphabet.
+And of course natural languages can be viewed as formal languages, as is commonly done in computational linguistics.
+In this case, parsing is about assigning structures to natural language utterances. 
+
+Linguists might interject that this description is overly general: natural language parsing must assign \emph{tree-like} objects to natural language utterances that match, in some suitably abstract sense, the structures subconsciously employed by native speakers.
+This is indeed the standard view of parsing in linguistics, but it is a very specific notion that is tailored to an equally specific set of goals.
+The linguistic definition treats parsing as a model of how humans process sentences.
+That is certainly an interesting enterprise, but as the non-linguistic examples above demonstrate it is a particular subproblem of the full spectrum of parsing work.
+In fact, human parsing has various quirks and peculiarities that distinguish it from pretty much every other parsing problem.
+So we should be careful to distinguish the formal process of \emph{parsing} from the cognitive mechanisms driving \emph{sentence processing}.
+
+As we will see, though, the two have a fair share of overlap, so that results about the former can inform the latter.
+That is highly welcome; sentence processing is a lot murkier than parsing, and whenever one ventures into murky territory, it is advisable to have some landmarks as points of orientation.
 
 \section{Parsing in Computer Science}
 \label{sec:BigPicture_CS}
+
+\subsection{Goals and Applications}
+\label{sec:BigPicture_CS-Goals}
+
+Computer scientists were interested in parsing from an early date on, with \citet{Yngve55} usually cited as the first worked-out parsing algorithm.
+To put this into perspective, research in formal language theory did not take off until \cite{Chomsky56} and \citet{ChomskySchuetzenberger63}.
+So parsing research was being done before its formal foundation was even in place yet (as is almost always the case in the history of science).
+
+Quite typical for computer science, the interest in parsing wasn't driven by intellectual curiosity alone but had a strong applied component to it.
+The early 50s had seen the arrival of high-level programming languages like Autocode, which was soon followed by Fortran and COBOL\@. 
+This made it possible to write programs in a language that abstracts away from the machine code actually executed by the computer.
+It is hard to imagine nowadays just how revolutionary high-level programming were at the time.
+Their most obvious advantage is that they are much easier to understand for humans, which enables them to write and maintain much more complicated programs with less time and effort. 
+But by abstracting away from the hardware executing the code, high-level programming languages also made it possible to write programs that can run on very different hardware.
+Not all computers are the same --- your laptop's x86 architecture shares little with your tablet's ARM-based hardware, yet you can write some Python code that will immediately run on both without any system-specific modifications because Python, just like any other high-level programming language, is deliberately designed to be hardware agnostic.
+These were undeniable advantages of high-level programming languages, but as so often in life they also created new problems.
+
+While high-level programming languages do away with the need for humans to write code ``close to the metal'', that does not change the fact that the actual hardware can only understand instructions in its own machine code.
+Somehow, the human-friendly source code has to be translated into hardware-friendly machine code, which is commonly referred to as \emph{compilation} or \emph{compiling}.
+Compiling is anything but straight-forward as even the most elementary programming concepts like variables pose serious challenges.
+Consider the following piece of Python code.
+%
+\begin{center}
+    \pythonfile[firstline=4]{./code/misc/variable_scope.py}
+\end{center}
+%
+This code involves two assignments of the variable $a$.
+One occurrence of $a$ is initialized as the integer $1$, the other one is set to $2$ in the definition of the \verb|increment_by_two| function.
+A careless translation of this program might overwrite the first instantiation of $a$ by the second one and would thus compute $2+2$ rather than the intended $1+2$.
+The actual translation for Python, on the other hand, is smart enough to recognize that the second variable appears within the scope of a function and thus constitutes a different object that just happens to have the same name.
+But scope is a structural notion, it is not readily apparent from the linear order of symbols.
+For example, if we added another assignment for $a$ immediately after the function, that should overwrite the first occurrence of $a$. 
+Structural considerations like this are indispensable for a correct compilation procedure from high-level source code to hardware-suitable machine code, and as a result, an efficient method for parsing source code is a prerequisite for compiler design.
+
+Since parsers main purpose in computer science is to facilitate the compilation of source code into machine code, it is of utmost importance that parsers are not ill-behaved.
+On a practical level, parsers must be efficient --- you don't want your OS to crash because the parser swallowed up all your memory while reading in your program, and compiling even large programs with millions of line of code like the Linux kernel should not take unfeasibly long.
+In addition, a parser should not assign a program an illicit structure or fail to find a structure for a well-formed program.
+The technical term for this is \emph{correctness}, which is formally defined as the conjunction of soundness and completeness.
+%
+\begin{description}
+    \item[Soundness] If the parser assigns string $s$ structure $\sigma$, then $\sigma$ is a licit structure for $s$.
+        In plain English: The parser says only correct things.
+    \item[Completeness] If $\sigma$ is a licit structure for string $s$, then the parser assigns $\sigma$ to $s$.
+        In plain English: The parsers says all correct things.
+\end{description}
+
+Note that soundness and completeness presuppose that we can tell for a given string what its licit structures are.
+That means we need a definition of the class of well-formed structural descriptions.
+In other words, we need a grammar.
+
 \subsection{Rewrite Grammars}
 \label{sub:BigPicture_Grammars}
-In computer science, things are straight-forward.
-The formal specification the parser has to adherer to is supplied by a \emph{rewrite grammar} $G \is \tuple{N, T, S, R}$, where
+The class of structural descriptions the parser has to operate in is supplied by a \emph{rewrite grammar} $G \is \tuple{N, T, S, R}$, where
 %
 \begin{itemize}
     \item $N$ is a finite, non-empty set of \emph{non-terminal} symbols, and
@@ -32,47 +95,53 @@ The \emph{language generated by $G$} is the set $L$ of strings that $G$ derives.
     Suppose we have a grammar $G$ with $T \is \setof{a,b,c,d}$, $N \is \setof{A,B}$, and start symbol $A$.
     Furthermore, $R$ consists of the following rules:
     %
-    \begin{align*}
-        A &\rewrite a & A &\rewrite AA\\
-        B &\rewrite b & A & \rewrite Bc\\
-        AB &\rewrite a & aB & \rewrite d\\
-    \end{align*}
+    \begin{center}
+        \begin{tabular}{rrcl@{\hspace{5em}}rrcl}
+            1) & A  &\rewrite & a & 4) &  A & \rewrite & AA\\
+            2) & B  &\rewrite & b & 5) &  A & \rewrite & Bc\\
+            3) & AB &\rewrite & a & 6) & aB & \rewrite & d\\
+        \end{tabular}
+    \end{center}
 
     This grammar generates an infinite set of strings (why?).
     Here's three of them and how the grammar derives them:
 
     \[
         A
-        \rewrite AA 
-        \rewrite ABc
-        \rewrite ac
+        \rewriteR{4} AA 
+        \rewriteR{5} ABc
+        \rewriteR{3} ac
     \]
     \[
         A
-        \rewrite AA
-        \rewrite ABc
-        \rewrite aBc
-        \rewrite dc
+        \rewriteR{4} AA
+        \rewriteR{5} ABc
+        \rewriteR{1} aBc
+        \rewriteR{6} dc
     \]
     \[
         a
-        \rewrite AA
-        \rewrite AAA
-        \rewrite AAAA
-        \rewrite ABcAA
-        \rewrite acAA
-        \rewrite acABc
-        \rewrite acaBc
-        \rewrite acdc
+        \rewriteR{4} AA
+        \rewriteR{4} AAA
+        \rewriteR{4} AAAA
+        \rewriteR{5} ABcAA
+        \rewriteR{3} acAA
+        \rewriteR{5} acABc
+        \rewriteR{1} acaBc
+        \rewriteR{6} acdc
     \]
 \end{examplebox}
 
-By default, rewriting grammars are not particularly well-behaved on a computational level --- for instance, some of them are so complex that one cannot tell for all strings $s$ whether they are generated by the grammar.
+By default, rewrite grammars are not particularly well-behaved on a computational level --- for instance, some of them are so complex that one cannot tell for all strings whether they are generated by the grammar.
 This immediately entails that they do not have efficient parsers, either.
-After all, the parser has to assign a structure to every string according to the rewrite grammar, and if it could do that for every $s$, it could also determine for every $s$ whether it is actually generated by the grammar (since an ``ungrammatical'' string would have an illicit structure).
+After all, the parser has to assign a structure to every string according to the rewrite grammar, and if it could do that for every string, it could also determine for every string whether it is actually generated by the grammar (since an ``ungrammatical'' string would have an illicit structure).
+%
+\begin{proposition}
+    Parsing is impossible for unrestricted rewrite grammars.
+\end{proposition}
 
-Instead, computer scientists commonly use a subclass of rewrite grammar known as \emph{context-free grammars} (CFGs).
-In syntax, those are commonly known as \emph{phrase structure grammars}.
+For this reason, computer scientists prefer a subclass of rewrite grammars known as \emph{context-free grammars} (CFGs).
+In syntax, those are commonly known as \emph{phrase structure grammars} (PSGs).
 For CFGs, $R$ is a finite subset of $N \times (N \cup T)^+$, that is to say, only a single non-terminal symbol can appear to the left of a rewrite arrow.
 That's why these grammars are called context-free: whether a rule can apply to a non-terminal symbol never depends on what appears to the left or the right of the symbol.
 %
@@ -94,27 +163,19 @@ That's why these grammars are called context-free: whether a rule can apply to a
         S &\rewrite ab
     \end{align*}
     %
-    This grammar generates an infinite set of strings, including $aaabbb$:
+    This grammar generates an infinite set of strings, including $\String{aaabbb}$:
     %
     \[
         S
-        \rewrite aSb
-        \rewrite aaSbb
-        \rewrite aaaSbbb
+        \rewrite \String{aSb}
+        \rewrite \String{aaSbb}
+        \rewrite \String{aaaSbbb}
     \]
     Can you give a description of the language generated by $G$?
 \end{examplebox}
 
 The nice thing about CFGs is that their derivations can be represented in terms of trees.
 So originally the phrase structure trees used in syntax were actually the derivation trees of CFGs (we will come back to this point much later in the semester during our discussion of Minimalist grammars).
-%
-\begin{exercise}
-    In linguistics there are many debates about the difference between \emph{representational} and \emph{derivational theories}.
-    Representational theories do not care about how structures are assembled and instead use constraints to separate the well-formed structures from the ill-formed ones.
-    Derivational theories describe how the structures built via certain operations and restrict when and where these operations may apply.
-    Phrase structure trees are usually thought of as representational in nature, they encode the structure of the sentence but not necessarily how it was built (e.g. via Merge and Move in Minimalism).
-    What should we make of this divide given that phrase structure trees are actually derivation trees?
-\end{exercise}
 %
 \begin{examplebox}[CFG Derivation Trees]
     The context-free derivation above corresponds to the tree below:
@@ -137,6 +198,15 @@ So originally the phrase structure trees used in syntax were actually the deriva
         \end{tikzpicture}
     \end{center}
 \end{examplebox}
+%
+\begin{exercise}
+    In linguistics there are many debates about the difference between \emph{representational} and \emph{derivational theories}.
+    Representational theories do not care about how structures are assembled and instead use constraints to separate the well-formed structures from the ill-formed ones.
+    Derivational theories describe how the structures built via certain operations and restrict when and where these operations may apply.
+    Phrase structure trees are usually thought of as representational in nature, they encode the structure of the sentence but not necessarily how it was built (e.g. via Merge and Move in Minimalism).
+    What should we make of this divide given that phrase structure trees are actually derivation trees?
+\end{exercise}
+
 
 \subsection{Recognizers and Parsers}
 \label{sub:BigPicture_Parsing}
@@ -151,26 +221,13 @@ In fact, parsing often boils down to applying the grammar's rewrite rules in a v
 
 Things get tricky, though, when a string has more than one derivation tree.
 Should the parser assign all derivations or only one, and if the latter, which one?
-There's different solutions for handling this scenario, and we will encounter some later in the semester.
+There's different solutions for andling this scenario, and we will encounter some later in the semester.
 
 \begin{remark}
     This scenario rarely occurs in computer science because most parsing is concerned with parsing computer programs, i.e.\ taking a piece of source code and determining its underlying structure to facilitate the translation of the program into machine code.
     And programming languages are deliberately designed in a way such that every well-formed string has one unique derivation.
 \end{remark}
 
-Computer scientists require their parsers to be sound and complete.
-%
-\begin{description}
-    \item[Soundness] If the parser assigns string $s$ structure $\sigma$, then $\sigma$ is a licit structure for $s$ according to the grammar.
-        In plain English: The parser says only correct things.
-    \item[Completeness] If $\sigma$ is a licit structure for string $s$ according to the grammar, then the parser assigns $\sigma$ to $s$.
-        In plain English: The parsers says all correct things.
-\end{description}
-%
-Both properties are clearly desirable in a parser.
-After all, what's the point of meticulously writing a grammar if your parser messes things up later down the road?
-And the parser should also be efficient --- you don't want your OS to crash because the parser swallowed up all your memory while reading in your program.
-Unfortunately, the human parser didn't quite get the memo.
 
 \section{Syntactic Processing}
 \label{sec:BigPicture_Processing}
@@ -287,6 +344,22 @@ The distinction between competence parser and performance parser would also fit 
 % These are big questions of cognitive science, though, so a lot has been said about it.
 % Chapter 1 of \emph{Aspects} \citep{Chomsky65} is required reading for understanding the canonical view of the competence\slash performance distinction and, by extension, the respective roles of grammar and parser.
 % \citet{NeelemanKoot10} present a different perspective in line with Marr's three levels. 
+
+% what do linguists mean by parser? actual parser, parsing schema, parsing schema compiled out for specific grammar, or parser generator?
+% competence VS performance (Phillips: what's performance?); grammar as abstraction of parser? what's the divide?
+% why do we care about this in the first place?
+    % - model human cognition; explain processing quirks (which are surprising!), some of them being:
+        % - grammaticality illusions (NPIs, number agreement; but not person agreement)
+        % - ungrammaticality illusions (garden path sentences)
+        % - structure sensitivity (SC/RC vs RC/SC; center embedding VS right embedding)
+        % - structure insensitivity (merely local syntactic coherence effects)
+        % - word order effects
+        % - lack of word order effects (SRC over ORC irrespective of word order)
+        % - language-specific variation (attachment preferences)
+    % - build human-like machines (e.g. to seem more human, pass the Turing test by replicating our failures); at the very least: only produce easily parseable sentences
+    % - improve efficiency of industrial parsers by learning from nature (lotus effect)
+    % - use processing data as evidence in syntactic analysis (cf. DTC)
+    % - use parser as restriction on UG (only these grammars are efficiently parseable)
 
 \bibliographystyle{../../linquiry3}
 \bibliography{../../universal,../../graf}
