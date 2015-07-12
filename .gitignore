@@ -6,6 +6,7 @@
 !*.cls
 !*.dot
 !*.latexmain
+!*.md
 !*.py
 !*.sty
 !*.tex
