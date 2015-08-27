@@ -81,7 +81,7 @@ The class of structural descriptions the parser has to operate in is supplied by
     \item $N$ is a finite, non-empty set of \emph{non-terminal} symbols, and
     \item $T$ is a finite, non-empty set of \emph{terminal} symbols, and
     \item $S \in N$ is the designated \emph{start} symbol,
-    \item $R \subset (N \cup T)^* \cdot N \cdot (N \cup T)^* \times (N \cup T)^+$ is a finite set of rewriting rules.
+    \item $R \subset (N \cup T)^* \cdot N \cdot (N \cup T)^* \times (N \cup T)^*$ is a finite set of rewriting rules.
 \end{itemize}
 %
 In linguistic parlance: the grammar has lexical items ($= N$), parts of speech ($=T$), a special part of speech ($=S$), and a number of rules for rewriting (the set of which is called $R$).
@@ -238,6 +238,7 @@ There's different solutions for this scenario, and we will encounter some later 
 
 \section{Syntactic Processing}
 \label{sec:BigPicture_Processing}
+
 \subsection{The Human Parser and its Quirks}
 \label{sub:BigPicture_HumanParser}
 From the perspective of a computer scientist, whatever controls syntactic processing is a very unruly piece of machinery.
@@ -280,6 +281,18 @@ In each one of the following pairs, the first sentence is a lot easier than the 
     \end{xlist}
 \end{exe}
 
+Furthermore, processing effects can vary across languages.
+For instance, modification of nested phrases is often ambiguous.
+%
+\begin{exe}
+    \ex I fixed the door of the car with a scratch.
+\end{exe}
+%
+Here the PP \emph{with a dent} can modify \emph{window} or \emph{car}.
+Some languages like English prefer modification of the structurally more embedded noun \emph{car}, while German and Spanish speakers are more likely to interpret the sentence as \emph{scratch} modifying the higher noun \emph{door}.
+These two readings are referred to as low and high PP attachment, respectively.
+So not only is the human parser a rather ill-behaved creature from a computational perspective, it isn't even a uniform creature across languages.
+
 But hold on a second.
 Soundness and completeness are properties that hold with respect to a specific grammar.
 That's straight-forward in computer science, where the roles of grammar and parser are well-defined.
@@ -304,7 +317,7 @@ The competence theory of the parser is a specification of the parser and its beh
 The performance theory, on the other hand, is about how the parser behaves once it is run in the cognitive environment of the human brain.
 The leading idea of this course is that we can import competence theories of parsing from computer science and turn them into performance theories of parsing via some linking hypothesis, some metric that relates the parser's behavior to processing difficulty.
 
-Depending on how much of a scientific realist you are (personally I'm closer to a constructive empiricist in the vein of \citealt{Fraassen80}), you might wonder what this view implies about language as a cognitive module \citep[cf.]{Chomsky86a, Fodor83}.
+Depending on how much of a scientific realist you are (personally I'm closer to a constructive empiricist in the vein of \citealt{Fraassen80}), you might wonder what this view implies about language as a cognitive module \citep[cf.][]{Chomsky86a, Fodor83}.
 Are the grammar and the parser two distinct cognitive systems?
 Should we distinguish the competence parser from the performance parser?
 The short answer is that this doesn't matter for this course.
@@ -337,12 +350,45 @@ And of course this hierarchy is continuous: Assembly code is closer to the physi
 However, the more you are interested in stating succinct generalizations, the more you'll be drawn towards abstractness and hence the computational level at the top of the continuum.
 
 What does this mean for language?
-Instead of thinking as the grammar and the parser as distinct entities, we can think of them as different descriptions of the human faculty of language, with the grammar close towards the top in the computational section, while the parser is closer to the algorithmic level \citep[cf.][]{NeelemanKoot10}.
+Instead of thinking of the grammar and the parser as distinct entities, we can view them as different descriptions of the human faculty of language, with the grammar close towards the top in the computational section, while the parser is closer to the algorithmic level \citep[cf.][]{NeelemanKoot10}.
 The distinction between competence parser and performance parser would also fit into this paradigm, with the former closer to the computational level but not as close as what we call the grammar.
 
 \begin{exercise}
     Can you think of an experiment or case study that would argue against the idea of parser and grammar as one and the same object?
 \end{exercise}
+
+
+\subsection{Why Processing Matters}
+
+Given what we have seen so far, the waters of syntactic processing are indeed very murky.
+Why, then, should we bother with syntactic processing at all rather than just focusing on computational parsing models and their usage in real-world applications?
+As so often in science, the most natural and immediate answer is that syntactic processing is an interesting and fun puzzle.
+And just like other aspects of human psychology studying it comes with the satisfaction of feeding mankind's innate vice of anthropocentric narcissism.
+But there are more tangible advantages.
+
+For those that mostly care about the engineering aspects of language technology, the human parser is both a challenge and an opportunity.
+It is a challenge because the limitations of the human parser are limitations of what is comprehensible to humans.
+A natural language system with perfect command of English will be considered broken by its user's if it expresses itself in garden path sentences and with multiple levels of center embedding.
+These constructions might not be particularly hard for a formal parsing model, but they nonetheless must be avoided in interactions with humans.
+Studying syntactic processing is also an opportunity because history has shown that many a great engineering insight can be gleamed from nature, and the human parser is an impressive machine --- warts and quirks notwithstanding.
+The parser is incredibly robust for most sentences encountered in the wild, and it operates much faster than any known parsing algorithm.
+It is essentially real-time, which means that if the input is presented to the parser in an ongoing stream, the parser finishes within some fixed constant $c$ of steps after reading in the last symbol. 
+Even with very strong restrictions on the grammar no state-of-the-art parsing model can match this speed.
+
+To linguists, syntactic processing holds the promise of resolving issues that cannot be decided based on grammaticality judgments.
+This is in fact a very old idea: the \emph{Derivational Theory of Complexity} (DTC; \citealp{MillerChomsky63,MillerMcKean64}) posits that the more grammatical operations are required to build a sentence, the harder it is to process.
+The DTC quickly fell out of favor for empirical \citep{Slobin66} and conceptual reasons \citep[cf.][]{Garnham83} but has seen a revival in recent years.
+\citet[Ch.5]{Phillips96} argues convincingly that the experimental results may discredit a specific version of the DTC rooted in early Transformational Grammar but do not challenge the assumption that grammatical complexity affects processing difficulty.
+\citet{Hale11} gives an outline of what a computationally grounded reinterpretation could look like, and recent applications for Minimalist syntax are developed in \citet{Kobele.etal12, GrafMarcinek14CMCL, GrafEtAl15MOL}.
+If this revival of the DTC turns out to be more successful, processing difficulties will offer a window into the mechanisms of the grammar and thus allow syntacticians to distinguish between competing analyses.
+
+Syntactic processing may also be essential in explaining certain typological universals, in particular why certain patterns are never instantiated cross-linguistically --- that is to say, why there are typological gaps.
+At this point, no grammar formalism can account for all typological facts purely in terms of \emph{formal universals}, i.e.\ restrictions on its operations and mechanisms.
+They all have to invoke \emph{substantive universals} such as a fixed set of categories, feature geometries and a very elaborate system of functional projections.
+Substantive universals are much less attractive than formal universals because they are hard to unify or reduce to more basic mechanisms.
+However, if it could be shown that some typological gaps exist because the corresponding patterns are much harder to process than the attested ones, then we would have a direct explanation of this typological facts in terms of processing.
+In other words, some typological universals no longer need to be accounted for in the grammar and can instead be factored out into a processing-based account.
+
 
 
 % \section{Further Reading}
@@ -353,20 +399,6 @@ The distinction between competence parser and performance parser would also fit 
 % \citet{NeelemanKoot10} present a different perspective in line with Marr's three levels. 
 
 % what do linguists mean by parser? actual parser, parsing schema, parsing schema compiled out for specific grammar, or parser generator?
-% competence VS performance (Phillips: what's performance?); grammar as abstraction of parser? what's the divide?
-% why do we care about this in the first place?
-    % - model human cognition; explain processing quirks (which are surprising!), some of them being:
-        % - grammaticality illusions (NPIs, number agreement; but not person agreement)
-        % - ungrammaticality illusions (garden path sentences)
-        % - structure sensitivity (SC/RC vs RC/SC; center embedding VS right embedding)
-        % - structure insensitivity (merely local syntactic coherence effects)
-        % - word order effects
-        % - lack of word order effects (SRC over ORC irrespective of word order)
-        % - language-specific variation (attachment preferences)
-    % - build human-like machines (e.g. to seem more human, pass the Turing test by replicating our failures); at the very least: only produce easily parseable sentences
-    % - improve efficiency of industrial parsers by learning from nature (lotus effect)
-    % - use processing data as evidence in syntactic analysis (cf. DTC)
-    % - use parser as restriction on UG (only these grammars are efficiently parseable)
 
 \bibliographystyle{../../linquiry3}
 \bibliography{../../universal,../../graf}
