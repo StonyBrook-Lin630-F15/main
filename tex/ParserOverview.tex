@@ -2,11 +2,11 @@
 \label{cha:ParserOverview}
 
 Last time we saw that Marr's three levels of analysis are a useful guideline with respect to how one might think about the distinction between grammar and parser in linguistics.
-We also extended this idea idea that one and the same device can be described at distinct levels of abstraction to the parser itself, differentiating between an idealized competence parser --- the full specification of the human parser --- and the performance parser, i.e.\ how the parser actually behaves when executed by the neural hardware of the human brain.
+We also extended this idea --- that one and the same device can be described at distinct levels of abstraction --- to the parser itself. We may thus differentiate between an idealized competence parser --- the full specification of the human parser --- and the performance parser, i.e.\ how the parser actually behaves when executed by the neural hardware of the human brain.
 But even if we disregard cognition for a moment and think about parsing in purely computational terms, it quickly becomes evident that there's many different ways of defining a parser, some more specific than others.
-In computer science, this is mostly a matter of convenience and generality, where abstraction pays off for studying the mathematics of parsing whereas the actual implementation in some programming language requires a lot more detail.
+In computer science, this is mostly a matter of convenience and generality, where abstraction pays off when studying the mathematics of parsing whereas the actual implementation in some programming language requires a lot more detail.
 
-For this course, however, abstraction is a matter of explanation: eventually, we want to relate parsing techniques to human sentence processing.
+For this course, on the other hand, abstraction is a matter of explanation: eventually, we want to relate parsing techniques to human sentence processing.
 If our description of the parser abstracts away from, say, how intermediate information is stored and retrieved, we're making the empirical assumption that these aspects of the parser are irrelevant for the psycholinguistic phenomena we observe.
 So before we even start any kind of empirically minded work, we have to get a better understanding of the different levels of abstraction, and in particular, what exactly we are abstracting away from.
 
@@ -14,7 +14,7 @@ So before we even start any kind of empirically minded work, we have to get a be
 \section{The Most General View of Parsing}
 \label{sec:ParserOverview_MostGeneralView}
 
-One of the cornerstone's of transformational grammar is the inverted T-model, a metaphor for the place of syntax in the language faculty.
+One of the cornerstones of transformational grammar is the inverted T-model, a metaphor for the place of syntax in the language faculty.
 %
 \begin{center}
     \begin{tikzpicture}
@@ -29,7 +29,7 @@ One of the cornerstone's of transformational grammar is the inverted T-model, a 
     \end{tikzpicture}
 \end{center}
 %
-The standard interpretation of this diagram is procedural in nature:
+The canonical interpretation of this diagram is procedural in nature:
 %
 \begin{enumerate}
     \item syntax builds structures from the items in the lexicon (or the numeration in earlier versions of Minimalist syntax),
@@ -46,7 +46,7 @@ There is, however, a more parsimonious interpretation of this model:
 \end{itemize}
 
 Notice that this more agnostic perspective generalizes the T-model from natural language to all kinds of rule-based systems.
-Just consider programming: a program is a highly structure object that has a linear realization in the form of its source code (its image under $\PFmapping$) and a realization in terms of the instructions carried out by the computer it is run on (its image under $\LFmapping$).
+Just consider programming: a program is a highly structured object that has a linear realization in the form of its source code (its image under $\PFmapping$) and a realization in terms of the instructions carried out by the computer it is run on (its image under $\LFmapping$).
 Why does this matter? Because it gives us the most general and abstract description of a parser.
 %
 \begin{description}
@@ -113,6 +113,8 @@ Why does this matter? Because it gives us the most general and abstract descript
 
 \section{One Step Down: Parsing as Grammar Intersection}
 \label{sec:ParserOverview_IntersectionParsing}
+
+\subsection{Parsing as Generation}
 The obvious problem with the previous view of parsing is that it tells us nothing about how the actual process is accomplished: if we don't know how to compute $\inverse{\PFmapping}$, there is little we can do.
 Now for some choices of $\PFmapping$ there are some very general algorithms for computing $\inverse{\PFmapping}$ (for example if $\PFmapping$ can be defined in terms of monadic second-order logic, the extension of first-order logic with quantification over sets).
 But for the purpose of relating parsing to human sentence processing, this perspective is still too general.
@@ -121,8 +123,7 @@ It can provide profound insights into the overall computational difficulty of th
 A slightly more concrete view is offered by \emph{intersection parsing}.
 Intersection parsing builds on the insight that all common grammar formalisms are closed under intersection with finite languages.%
 \footnote{
-    The closure property actually extends to all regular string languages.
-    However, the class of regular languages includes all finite languages.
+    The closure property actually extends to all regular string languages, which includes all finite languages.
 }
 That is to say, if $G$ is a grammar of formalism $\mathcal{F}$, and one takes the intersection of the language $L$ generated by $G$ and some arbitrary finite language $L_F$, then this language $L(G) \cap L_F$ can be generated by some grammar $G'$ belonging to formalism $\mathcal{F}$.
 Crucially, the proofs for this theorem are constructive in nature, which means that they actually provide a procedure for constructing $G'$ from $G$ and $L_F$.
@@ -189,7 +190,7 @@ In order to increase the size of a tree, one has to apply a rewrite rule.
 Every rewrite rule increases the number of symbols that are expanded into one or more symbols.
 If we can't have loops, that puts an upper bound on the length of unary branches.
 If we can't have empty heads, then every symbol that is rewritten by at least two symbols will eventually bring about the addition of at least two terminal symbols to the generated string.
-So the length of the string limits how many rewrite rules can be applied, which in turn bounds the size of the trees that can be assigned to the string.
+So the length of the string limits how many rewrite rules can be applied, which in turn limits the size of the trees that can be assigned to the string.
 
 The bounded tree size property, in turn, guarantees that $G'$ in step 3 above assigns only finitely many trees to the input sentence.
 %
@@ -203,7 +204,7 @@ And since the latter by assumption has the bounded tree size property, there's o
 We can find them all by simply applying all the rewrite rules of $G'$ in all possible ways (this step will finish after a finite amount of time since there's only a finite number of trees that need to be generated).
 
 \begin{description}
-    \item[Parsing as intersection] Suppose $i$ is our input sentence that needs to be parsed with respect to grammar $G$.
+    \item[Intersection parsing] Suppose $i$ is our input sentence that needs to be parsed with respect to grammar $G$.
         Let $L \is \setof{i}$ be the language whose only well-formed string is $i$.
         %
         \begin{itemize}
@@ -222,6 +223,10 @@ We can find them all by simply applying all the rewrite rules of $G'$ in all pos
     Would the procedure above also work for grammars that do not enjoy the bounded tree size property?
     What exactly would we lose?
 \end{exercise}
+
+\subsection{Constructing the Intersection Grammar}
+
+\subsection{Extension: Error Handling}
 
 While intersection parsing is very elegant, it still abstracts away from too many issues that are relevant to us.
 In particular, the \emph{incrementality of parsing} no longer plays a role.
@@ -327,7 +332,7 @@ Modern parsing theory treats parsers as the combination of three distinct module
     
     The rewrite rules act as our parsing schema, they tell us how to start and where to go from there.
     A control structure would also tell us in which order we have to apply the rules, e.g.\ by forcing us to always rewrite the left-most non-terminal in the current item, as we did in the first table.
-    As a data structure, we may use a table like the one above, but if there's multiple derivations for a sentence we will need something more sophisticated to keep track of all of them.
+    As a data structure, we may use a table like the one above, but if there are multiple derivations for a sentence we will need something more sophisticated to keep track of all of them.
 \end{examplebox}
 
 While the parsing literature is huge, parsers differ only in a small number of ways when it comes to the parsing schema and the control structure.
@@ -384,10 +389,10 @@ Modulo data structures, parsers differ only in a handful of ways.
 
 As mentioned last time, parsers need to be efficient.
 In computer science this is due to practical considerations (parsing a program with thousands of lines of code), whereas in psycholinguistics it is an empirical fact --- the human parser is extremely fast.
-Nonetheless efficiency will play a rather small role in this course, mostly because it is very unclear how to relate the results from computer science to the empirical task.
+Nonetheless efficiency will play a rather small role in this course, mostly because it is unclear how to relate the results from computer science to the empirical task.
 
 Computer scientists measure a parser's performance in terms of \emph{asymptotic worst-case complexity}.
-That is to say, how long does it take to parse a sentence if everything goes wrong that could go wrong within the specified parameters of the problem (e.g.\ high structural complexity of the input sentence) if there are no restrictions on the length of the sentence.
+That is to say, how long does it take to parse a sentence if everything goes wrong that could go wrong within the specified parameters of the problem (e.g.\ high structural complexity of the input sentence) and if there are no restrictions on the length of the sentence.
 
 Asymptotic worst-case complexity is expressed via the ``Big $O$'' notation.
 If a parser has time complexity $O(n^3)$, this means that it takes at most $n^3$ steps for the parser to finish, where $n$ is the length of the sentence measured in words.
@@ -417,8 +422,9 @@ But one has to be careful:
         The cubic time result for CFGs is about asymptotic worst-case complexity, whereas claims about the human parser are necessarily about average case complexity due to said parser's nasty habit to simply crash when things get difficult. 
         %
     \item \textbf{Generality of parser}\\
-        The cubic time result is for parsers that work for very large classes of CFGs.
-        If a parser can be optimized for a specific CFG, it can run much faster.
+        The cubic time result is for parsers that work for every single CFG\@.
+        That is an infinite class that includes many grammars that behave completely unlike natural language grammars. 
+        If a parser can be optimized for a specific subclass of CFGs, it can run much faster.
         The fewer grammars a parser needs to be sound and complete for, the more shortcuts and speedhacks can be employed.
         Maybe natural language grammars are just very specific objects that allow for tons of optimization (island effects anyone?).
         %
@@ -426,7 +432,7 @@ But one has to be careful:
         The cubic time result is due to the massive non-determinism CFG parsers have to deal with.
         One sentence can have hundreds of distinct derivations.
         The same is also true of natural language grammars, but semantics and discourse completely disambiguate sentences in the majority of cases.
-        This makes natural language processing mostly a deterministic process, and parsing deterministic CFGs is also very fast.
+        This makes natural language processing mostly a deterministic process, and parsing deterministic CFGs is also very fast (linear time, but not real-time).
 \end{itemize}
 
 
