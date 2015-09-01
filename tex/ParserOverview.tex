@@ -226,7 +226,107 @@ We can find them all by simply applying all the rewrite rules of $G'$ in all pos
 
 \subsection{Constructing the Intersection Grammar}
 
-\subsection{Extension: Error Handling}
+For CFGs the intersection grammar can be constructed very easily using a technique due to \citet{BarHillel.etal61}.
+Essentially, we subscript each terminal with the start and end position of the substring it covers in the input sentence.
+That way, we end up with a grammar where each non-terminal can only generate a specific string that corresponds to a continuous part of the input sentence --- each symbol is now tied to specific positions in the string.
+
+Suppose we have the following CFG.
+%
+\begin{center}
+    \begin{tabular}{rcl@{\hspace{5em}}rcl}
+        S  & \rewrite & NP VP &  N & \rewrite & John\\
+        NP & \rewrite & N     &  N & \rewrite & Mary \\
+        VP & \rewrite & V NP  &  V & \rewrite & punched\\
+    \end{tabular}
+\end{center}
+%
+This grammar generates four sentences.
+%
+\begin{exe}
+    \ex
+    \begin{xlist}
+        \ex John punched John.
+        \ex John punched Mary.
+        \ex Mary punched John.
+        \ex Mary punched Mary.
+    \end{xlist}
+\end{exe}
+%
+We will now construct an intersection grammar that generates all parses for the sentence \emph{John punched Mary}.
+Integers are used to refer to specific positions in the input string as illustrated below.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \foreach \Position in {0,1,2,3}
+            \node[draw,circle] (\Position) at ($\Position*(6em,0)$) {\Position};
+
+        \foreach \Word/\Start/\End in { John/0/1,
+                                        punched/1/2,
+                                        Mary/2/3%
+                                      }
+            \draw[->] (\Start) to node [above] {\Word} (\End);
+    \end{tikzpicture}
+\end{center}
+
+We could construct the intersection grammar bottom-up, starting with the rules generating leaves, but we will proceed top-down instead.
+So consider the rule S \rewrite\ NP VP\@.
+Since S is the root of the generated tree, it must span the whole input string.
+Consequently, we replace S by $_0$S$_3$.
+It is also obvious that the NP starts at position $0$ and the VP ends at position $3$.
+So the new rewrite rule must be $_0$S$_3$ \rewrite\ $_0$NP$_i$ $_i$VP$_3$, where $i$ is some integer between $0$ and $3$.
+A computer would try all possible options and then discard the ones that never occur in any tree for the input sentence, but we can inspect the original grammar and see immediately that its NPs only generate strings containing exactly one word.
+Therefore the NP must span from $0$ to $1$ and we have $_0$S$_3$ \rewrite\ $_0$NP$_1$ $_1$VP$_3$.
+Continuing in this fashion with the other rewrite rules, we eventually obtain the intersection grammar.
+%
+\begin{center}
+    \begin{tabular}{rcl@{\hspace{5em}}rcl}
+        $_0$S$_3$  & \rewrite & $_0$NP$_1$ $_1$VP$_3$
+        \\
+        $_0$NP$_1$ & \rewrite & $_0$N$_1$
+                   & 
+        $_0$N$_1$  & \rewrite & John
+        \\
+        $_2$NP$_3$ & \rewrite & $_2$N$_3$
+                   & 
+        $_2$N$_3$  & \rewrite & Mary
+        \\
+        $_1$VP$_3$ & \rewrite & $_1$V$_2$ $_2$NP$_3$
+                   & 
+        $_1$V$_2$  & \rewrite & punched
+    \end{tabular}
+\end{center}
+
+Note that we now have multiple NP rules that are almost identical except for their indices, which is expected because we have multiple NPs covering different spans of the input.
+This grammar also generates only one tree, which is shown below.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \Tree
+            [.$_0$S$_3$
+                [.$_0$NP$_1$
+                    [.$_0$N$_1$
+                        John
+                    ]
+                ]
+                [.$_1$VP$_3$
+                    [.$_1$V$_2$
+                        punched
+                    ]
+                    [.$_2$NP$_3$
+                        [.$_2$N$_3$
+                            Mary
+                        ]
+                    ]
+                ]
+            ]
+    \end{tikzpicture}
+\end{center}
+%
+In principle it might be possible for an intersection grammar to generate an infinite number of trees (as a single input may have an infinite number of possible analyses).
+In that case it obviously isn't practical to generate all trees, but we do not need to.
+The intersection grammar fully represents the set of possible parses, just like the original grammar fully represents the set of well-formed trees of the language.
+So whatever you want to do with the parse trees, you can lift it to an operation over the intersection grammar and get your desired result this way.
+For this reason, intersection grammars are also called \emph{parse forests}.
 
 While intersection parsing is very elegant, it still abstracts away from too many issues that are relevant to us.
 In particular, the \emph{incrementality of parsing} no longer plays a role.
@@ -235,6 +335,7 @@ the parser doesn't wait for the entire sentence to be uttered before it starts w
 The parsing as intersection approach, on the other hand, needs to know the entire input sentence in order to construct the grammar that will be used for inferring the tree structures.
 Since pretty much all interesting phenomena in syntactic processing are related to incrementality in some form or another, intersection parsing is also too coarse for our purposes.
 We have to get closer to the algorithmic level of description.
+But try to keep intersection parsing in the back of your head --- in the next weeks, you will (hopefully) come to realize that parsers are essentially algorithms for generating intersection grammars on the fly.
 
 
 \section{Towards the Algorithmic Level}
@@ -267,13 +368,13 @@ Modern parsing theory treats parsers as the combination of three distinct module
 \end{description}
 %
 \begin{examplebox}[A naive parser for CFGs]
-    Suppose we want to parse the sentence \emph{John punched Mary} with the CFG given below.
+    Suppose we want to parse the sentence \emph{John punched Mary} with the same CFG as before, which is repeated here for your convenience.
     %
     \begin{center}
-        \begin{tabular}{rlp{5em}rl}
-            S  & \rewrite\ NP VP &  & N & \rewrite\ John\\
-            NP & \rewrite\ N     &  & N & \rewrite\ Mary \\
-            VP & \rewrite\ V NP  &  & V & \rewrite\ punched\\
+        \begin{tabular}{rcl@{\hspace{5em}}rcl}
+            S  & \rewrite & NP VP &  N & \rewrite & John\\
+            NP & \rewrite & N     &  N & \rewrite & Mary \\
+            VP & \rewrite & V NP  &  V & \rewrite & punched\\
         \end{tabular}
     \end{center}
     %
