@@ -250,6 +250,34 @@ The parser uses two inference rules; one for scanning, the other one for top-dow
 The scanning rule tells us that the starting position of an item can be moved one to the right if the item starts with a terminal symbol that matches the word in the input string at the corresponding position.
 The predict rule produces a new item from an old by rewriting one the one non-terminal symbols using a production of $G$.
 
+Strictly speaking the parsing schema does not give us the actual system of axioms and inference rules.
+Rather, these are obtained once the variables in the parsing schema are instantiated according to the rewrite grammar.
+For example, the predict rule would the instantations below (and several more) given the grammar presented earlier.
+%
+\begin{prooftree}
+    \AxiomC{$[i, \mathrm{S} ,j]$}
+    \UnaryInfC{$[i, \mathrm{NP}\ \mathrm{VP} ,j]$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{$[i, \mathrm{NP}\ \mathrm{VP} ,j]$}
+    \UnaryInfC{$[i, \mathrm{Det\ N}\ \mathrm{VP},j]$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{$[i, \mathrm{NP}\ \mathrm{VP} ,j]$}
+    \UnaryInfC{$[i, \text{a} \mathrm{N}\ \mathrm{VP},j]$}
+\end{prooftree}
+%
+The instantiation of a parsing schema according to a grammar is called a \emph{parsing system}.
+In contrast to the parsing schema, a parsing system may have an infinite number of rules.
+That's not the case here because our grammar does not have recursion and thus can only create a finite number of sentences.
+
+\begin{exercise}
+    (Psycho-)Linguists do not distinguish between parsing schema and parsing system (nor do they factor out control structure and data structure).
+    Is their notion of parser closer to a parsing schema or a parsing system?
+    Or do they unwittingly switch between the two depending on context?
+\end{exercise}
 
 \begin{examplebox}[Top-down parse of \emph{The anvil hit Daffy}]
     Let $G$ be the grammar at the beginning of the handout.
@@ -275,8 +303,8 @@ The predict rule produces a new item from an old by rewriting one the one non-te
     \end{center}
     %
     Note that the table above only shows the prediction steps leading to a successful parse.
-    The parser, on the other hand, applies every possible prediction step.
-    So from [0,NP VP,4], for instance, the parser not only predicts [0,Det N VP,4] via rule 3 but also [0,PN VP,4] via rule 2 since both can be applied to NP\@.
+    The parser, on the other hand, could in principle apply every possible prediction step (depending on its control structure).
+    So from [0,NP VP,4], for instance, the parser may not only predict [0,Det N VP,4] via rule 3 but also [0,PN VP,4] via rule 2 since both can be applied to NP\@.
 \end{examplebox}
 
 As was discussed last time, the parsing schema only describes the starting point of the parser, the desired outcome, and which inference steps the parser may take to get from the former to the latter.
@@ -388,7 +416,8 @@ As before the axiom and goal are $[0,\psep S,n]$ and $[n,\psep,n]$, respectively
 \subsection{Data Structure}
 \label{sub:TopDown_Data}
 There's a myriad of different data structures a top-down parser may employ.
-We won't discuss them in great detail, but let's quickly summarize what the parser needs to be able to do.
+We won't discuss them in great detail until later, but let's quickly summarize what the parser needs to be able to do.
+%fixme: chapter reference
 %
 \begin{itemize}
     \item \textbf{Store history of successful parses}\\
@@ -412,15 +441,16 @@ For instance, identical items can be shared across parse histories.
 That way, if the parser currently has three histories containing the item [4,\psep NP,20], the possible inferences from this item only need to be computed once rather than three times, which would be a waste of resources.
 Similarly, some of the inferences from this item can also be reused for a parse with item [2, \psep NP, 18].
 These techniques for sharing structure and memorizing the results of computation so that they can be reused somewhere else later on fall under the umbrella of \emph{dynamic programming} and \emph{tabulation}.
-They are very powerful ideas, but their addition does not alter the parsing schema or the control structure.
+These are very powerful ideas, but their addition does not alter the parsing schema or the control structure.
 
-However, the control structure needs to include some strategy for how distinct parses should be prioritized.
-For instance, one may finish one parse table before moving on to the next, or interleave the different tables.
-Often parse tables are put in a \emph{priority queue}.
-At each step, the first table in the queue is opened and one inference step is applied.
-Depending on the outcome of this inference, the table may be removed from the top spot and inserted somewhere else in the queue.
+The control structure also needs to include some strategy for how distinct parses should be prioritized.
+For instance, one may finish one parse before moving on to the next, or interleave them. 
+Often parses are put in a \emph{priority queue}.
+At each step, the first parse in the queue is opened and one inference step is applied.
+Depending on the outcome of this inference, the parse may be removed from the top spot and inserted somewhere else in the queue.
 Similarly, the inference step may have created new parse tables that also need to be inserted somewhere in the queue.
+As we will see next time, the choice of control structure plays a great role for what psycholinguistic predictions are being made.
 
 
-\bibliographystyle{../../linquiry3}
-\bibliography{../../universal,../../graf}
+\bibliographystyle{./bib/linquiry3}
+\bibliography{./bib/universal,./bib/graf}
