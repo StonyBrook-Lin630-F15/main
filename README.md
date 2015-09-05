@@ -5,7 +5,7 @@ Parsing & Syntactic Processing
 Overview
 --------
 
-This is the primary course website for Parsing & Syntactic Processing (Lin 637), offered by the [Department of Linguistics] [department] at [Stony Brook University] [sbu]. For a brief list of topics, check the [syllabus] [syllabus].
+This is the primary course website for Parsing & Syntactic Processing (Lin 630), offered by the [Department of Linguistics] [department] at [Stony Brook University] [sbu]. For a brief list of topics, check the [syllabus] [syllabus].
 
 This repository is publicly accessible and hosts the LaTeX source code for the lecture notes. Compiled pdfs of each chapter are available in the [pdf] [pdf] folder.
 
