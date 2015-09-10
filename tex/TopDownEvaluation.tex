@@ -70,7 +70,7 @@ We call a node in this tree a \emph{parse leaf} iff it is a leaf or has at least
 The set of parse tables, then, corresponds exactly to the set of parse paths.
 Putting all of this together, we can implement a priority queue as a ranking of parse paths through the prefix tree.
 %
-\begin{examplebox}{Parse Tables as Trees}
+\begin{examplebox}[Parse Tables as Trees]
 Suppose we are using the grammar from the beginning of Lecture~\ref{cha:TopDown} to parse \emph{the anvil hit Daffy} with a recursive descent parser.
 Our parse table starts with [0,\psep S] as usual, from which we can only predict [0,\psep NP VP].
 This can be represented as the tree below.
@@ -518,7 +518,7 @@ Parsing difficulty, then, can be measured in a variety of ways.
     \item[Payload] the \emph{payload of tree $t$} is the number of nodes whose tenure is strictly greater than $1$
 \end{description}
 %
-These two measures can be combined to create a variety of difficulty metrics such as the two below (cf.\ \citealt{Kobele.etal12} and \citealt{GrafMarcinek14CMCL}).
+These two measures can be combined to create a variety of difficulty metrics such as the two below (cf.\ \citealt{Kobele.etal12}, \citealt{GrafMarcinek14CMCL}, and \citealt{GrafEtAl15MOL}).
 %
 \begin{description}
     \item[MaxTen] greatest tenure among all the nodes; $\max(\setof{ \mathrm{tenure}(n) })$

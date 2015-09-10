@@ -208,7 +208,7 @@ The shift rule is the scan rule of a right-to-left top-down parser with top and 
 \subsection{Control Structure}
 \label{sub:BottomUp_Control}
 
-The control structure can be encoded by adding the familiar \psep\ to the rules.
+The control structure can be (partially) encoded by adding the familiar \psep\ to the rules.
 
 \paragraph{Left-to-right, depth-first}
 The only axiom is $[0, \psep ,0]$, and the only goal is $[0,S \psep ,n]$.
@@ -320,8 +320,8 @@ The axioms and goals are the same as for the depth-first parser, though.
 
 Notice that both parser have a certain overlap between the rules.
 In the case of the depth-first parser, the domains of the shift and reduce rules are not disjoint.
-That is to say, for some parse items both shift and reduce are valid continuations of the parse.
-This is a necessary consequence of non-determinism in the grammar.
+That is to say, for some parse items both shift and reduce are valid continuations of the parse, which is called a \emph{shift reduce conflict}.
+Shift reduce conflicts are an unavoidable consequence of non-determinism in the grammar.
 A top-down parser faces non-determinism with respect to which rewrite rule to apply to a given non-terminal $N$.
 For a bottom-up parser, this step is usually deterministic because distinct non-terminals can be assumed to also have distinct right-hand sides in rewrite rules (rules assigning parts of speech to words are one notable exception).
 But the bottom-up parser must decide whether to reduce right away or read another input symbol first, which might allow for a different reduction step.
@@ -422,7 +422,7 @@ But the bottom-up parser must decide whether to reduce right away or read anothe
 The breadth-first parser has a comparable overlap between shift and return.
 Once again this corresponds to the distinction between waiting for more input or building structure on top of the input read so far.
 The focal point of non-determinism, however, lies in the definition of the reduction rule, which allows the parser to non-deterministically partition the string to the right of $\psep$ into three segments $\beta$, $\gamma$ and $\delta$ to reduce $\beta$.
-This is essential to allow for cases where the symbol immediately after $\psep$ cannot be reduced, or where reduction would be possible but would prevent the parser from assigning an alternative structure.
+This rule is indispensable in cases where the symbol immediately after $\psep$ cannot be reduced, or where reduction would be possible but would prevent the parser from assigning an alternative structure.
 %
 \begin{examplebox}[A breadth-first parse with structural ambiguity]
     Consider now the two available breadth-first parses for the NP \emph{John and Mary or Sue}.
@@ -475,7 +475,7 @@ This is essential to allow for cases where the symbol immediately after $\psep$ 
 \subsection{Garden Paths}
 \label{sub:BottomUp_GardenPaths}
 
-If the parser prioritizes reduction over shifting, a serial shift reduce parser with backtracking makes similar predictions to a recursive descent parser.
+If the parser prioritizes reduction over shifting (which is up to the control structure), a serial shift reduce parser with backtracking makes similar predictions to a recursive descent parser.
 %
 \begin{examplebox}[Shift-reduce parse for \emph{The horse raced past the barn fell}]
     We operate with the same grammar as in \ref{sub:TopDownEval_FormalGardenPath}.
