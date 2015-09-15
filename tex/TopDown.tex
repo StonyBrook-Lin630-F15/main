@@ -10,21 +10,21 @@ That's because top-down parsing is very close to the idea of phrase structure gr
 Suppose you are given the following CFG.
 %
 \begin{center}
-    \begin{tabular}{rrlp{3em}rrl}
-        1)  & S   & \rewrite\ NP VP               &  & 
-        6)  & Det & \rewrite\ a | the
+    \begin{tabular}{rrcl@{\hspace{3em}}rrcl}
+        1)  & S   & \rewrite\ & NP VP               &
+        6)  & Det & \rewrite\ & a | the
         \\
-        2)  & NP  & \rewrite\ PN                  &  & 
-        7)  & N   & \rewrite\ car | truck | anvil
+        2)  & NP  & \rewrite\ & PN                  &
+        7)  & N   & \rewrite\ & car | truck | anvil
         \\
-        3)  & NP  & \rewrite\ Det N               &  & 
-        8)  & PN  & \rewrite\ Bugs | Daffy
+        3)  & NP  & \rewrite\ & Det N               &
+        8)  & PN  & \rewrite\ & Bugs | Daffy
         \\
-        4)  & VP  & \rewrite\ Vi                  &  & 
-        9)  & Vi  & \rewrite\ fell over
+        4)  & VP  & \rewrite\ & Vi                  &
+        9)  & Vi  & \rewrite\ & fell over
         \\
-        5)  & VP  & \rewrite\ Vt NP               &  & 
-        10) & Vt  & \rewrite\ hit
+        5)  & VP  & \rewrite\ & Vt NP               &
+        10) & Vt  & \rewrite\ & hit
         \\
     \end{tabular}
 \end{center}
