@@ -55,20 +55,119 @@ If for some reason this process proves too difficult, the parser gets stuck and 
 This kind of analysis is compatible with top-down parsing, depending on the data structure we use.
 Remember that the data structure keeps track of the items in the current parse, but also of alternative parses.
 The control structure includes a set of instructions for which parses should be prioritized.
-Let's try to make \possciteauthor{Frazier79} account precise using a top-down parser with priority queues as data structure and a serial strategy for expanding multiple parses.
+Let's try to make \possciteauthor{Frazier79} account precise using a top-down parser with priority queues and a serial strategy for expanding multiple parses.
 
 \subsection{Priority Queues and Prefix Trees}
 \label{sub:TopDownEval_PriorityQueues}
-Let's assume that our data structure is a \emph{priority queue}, i.e.\ a list of parse tables that can be reordered, to which we can add new entries, and from which we can delete old entries (note: even though I call it a list, that doesn't mean queues are best implemented as lists; in Python, for example, you're better off using arrays).
 
-As so often, a more abstract perspective is helpful here.
-Instead of a list of parse tables, we can use a \emph{prefix tree} as a unified way of representing multiple parses at once.
+Let's assume that our control structure operates on a \emph{priority queue}, i.e.\ a list of parse tables that can be reordered, to which we can add new entries, and from which we can delete old entries (note: even though I call it a list, that doesn't mean queues are best implemented as lists; in Python, for example, you're better off using arrays\slash dictionaries).
+Priority queues provide an easy way of prioritizing specific parses.
+Suppose that our priority queue is [$i_1$, \ldots, $i_n$], $n \geq 1$, where each $i_j$ is some parse item.
+Since $i_1$ is the first item in the queue it has the highest priority and should be acted on first.
+The parser removes $i_1$ from the queue, computes all parse items than can be inferred from $i_1$, and reinserts them into the queue at some position corresponding to their relative priority with respect to the other items in the queue.
+%
+\begin{examplebox}[Priority Queues for Serial and Parallel Parsing]
+    \label{ex:TopDownEval_PriorityQueue}
+    Consider once again our toy grammar from Cha.~\ref{cha:TopDown}.
+    %
+    \begin{center}
+        \begin{tabular}{rrcl@{\hspace{3em}}rrcl}
+            1)  & S   & \rewrite\ & NP VP               &
+            6)  & Det & \rewrite\ & a | the
+            \\
+            2)  & NP  & \rewrite\ & PN                  &
+            7)  & N   & \rewrite\ & car | truck | anvil
+            \\
+            3)  & NP  & \rewrite\ & Det N               &
+            8)  & PN  & \rewrite\ & Bugs | Daffy
+            \\
+            4)  & VP  & \rewrite\ & Vi                  &
+            9)  & Vi  & \rewrite\ & fell over
+            \\
+            5)  & VP  & \rewrite\ & Vt NP               &
+            10) & Vt  & \rewrite\ & hit
+        \end{tabular}
+    \end{center}
+    %
+    Suppose that we have a recursive descent parser that explores the space of possible parses with a priority queue such that
+    %
+    \begin{itemize}
+        \item only the first item of the queue can be worked on,
+        \item new items can only be added to the top of the queue.
+    \end{itemize}
+    %
+    Such a queue is also called a \emph{stack}.
+    Then the queue in the parse for \emph{The anvil hit Daffy} grows as indicated below.
+    We assume that the parser has some mechanism for preferring specific rewrite rules whenever more than one can apply.
+    %
+    \begin{center}
+        \begin{tabular}{r|l}
+            \textbf{queue} & \textbf{parser operation}\\
+            $\lbrack$0,S] & axiom\\
+            $\lbrack$0.NP VP] & predict(1)\\
+            $\lbrack$0,PN VP] [0,Det N VP] & predict(2), predict(3)\\
+            $\lbrack$0,Bugs VP] [0,Daffy VP] [0, Det N VP] & predict(8)\\
+            $\lbrack$0,Daffy VP] [0,Det N VP] & failed parse\\
+            $\lbrack$0,Det N VP] & failed parse\\
+            $\lbrack$0,a N VP] [0,the N VP] & predict(6)\\
+            $\lbrack$0,the N VP] & failed parse\\
+            $\lbrack$1,N VP] & scan\\
+            $\lbrack$1,car VP] [1,anvil VP] [1,truck VP]& predict(7)\\
+            $\lbrack$1,anvil VP] [1,truck VP] & failed parse\\
+            $\lbrack$2,VP] [1,truck VP] & scan\\
+            $\lbrack$2,Vi] [2,Vt NP] [1,truck VP] & predict(4), predict(5)\\
+            $\lbrack$2,fell over] [2,Vt NP] [1,truck VP] & predict(9)\\
+            $\lbrack$2,Vt NP] [1,truck VP] & failed parse\\
+            $\lbrack$2,hit NP] [1,truck VP] & predict(11)\\
+            $\lbrack$3,NP] [1,truck VP] & scan\\
+            $\lbrack$3,PN] [3,Det N] [1,truck VP] & predict(2), predict(3)\\
+            $\lbrack$3,Bugs] [3,Daffy] [3,Det N] [1,truck VP] & predict(8)\\
+            $\lbrack$3,Daffy] [3,Det N] [1,truck VP] & failed parse\\
+            $\lbrack$4,] [3,Det N] [1,truck VP] & scan, parse found!
+        \end{tabular}
+    \end{center}
+    %
+    Now compare this to a recursive descent parser that operates almost exactly the same except that new items are added to the end of the queue.
+    While the previous parser fully explored one parse before moving on to another one, this one alternates between parses after every step.
+    In psycholinguistic parlance, then, the parser above is \emph{serial} whereas the one below is \emph{parallel}.
+    %
+    \begin{center}
+        \begin{tabular}{r|l}
+            \textbf{queue} & \textbf{parser operation}\\
+            $\lbrack$0,S] & axiom\\
+            $\lbrack$0.NP VP] & predict(1)\\
+            $\lbrack$0,PN VP] [0,Det N VP] & predict(2), predict(3)\\
+            $\lbrack$0, Det N VP] [0,Bugs VP] [0,Daffy VP] & predict(8)\\
+            $\lbrack$0,Bugs VP] [0,Daffy VP] [0,a N VP] [0, the N VP]& predict(6)\\
+            $\lbrack$0,Daffy VP] [0,a N VP] [0, the N VP]& failed parse\\
+            $\lbrack$0,a N VP] [0, the N VP]& failed parse\\
+            $\lbrack$0,the N VP]& failed parse\\
+            $\lbrack$1,N VP]& scan\\
+            $\lbrack$1,car VP] [1,anvil VP] [1,truck VP] & predict(7)\\
+            $\lbrack$1,anvil VP] [1,truck VP] & failed parse\\
+            $\lbrack$1,truck VP] [2, VP] & scan\\
+            $\lbrack$2,VP] & failed parse\\
+            $\lbrack$2,Vi] [2,Vt NP] & predict(4), predict(5)\\
+            $\lbrack$2,Vt NP] [2,fell over] & predict(9)\\
+            $\lbrack$2,fell over] [2,hit NP] & predict(10)\\
+            $\lbrack$2,hit NP] & failed parse\\
+            $\lbrack$3,NP] & scan\\
+            $\lbrack$3,PN] [3,Det N] & predict(2), predict(3)\\
+            $\lbrack$3,Det N] [3,Bugs] [3,Daffy] & predict(8)\\
+            $\lbrack$3,Bugs] [3,Daffy] [3,a N] [3,the N] & predict(6)\\
+            $\lbrack$3,Daffy] [3,a N] [3, the N] & failed parse\\
+            $\lbrack$3,a N] [3, the N] [4,] & scan, parse found!\\
+        \end{tabular}
+    \end{center}
+\end{examplebox}
+
+As so often, a more abstract perspective is helpful here to truly appreciate what is going on.
+Instead of a table listing the modifications of the priority queue, we can use a \emph{prefix tree} as a unified way of representing multiple parses at once.
 The root of the prefix tree is always our start axiom [0,S] (since the final position is redundant for top-down parsing, it can be safely omitted).
 If parse item $q$ is obtained from item $p$ via a prediction or scan rule, $q$ is added to the tree as a daughter of $p$.
 Furthermore, each node that is not a leaf is also subscripted with the list of unused predict rules. 
 We call a node in this tree a \emph{parse leaf} iff it is a leaf or has at least one subscript, and a (strictly descending) path spanning from the root to a leaf or a parse leaf is called a \emph{parse path}.
-The set of parse tables, then, corresponds exactly to the set of parse paths.
-Putting all of this together, we can implement a priority queue as a ranking of parse paths through the prefix tree.
+The set of parse tables, then, corresponds exactly to the set of parse paths, and a priority queue defines a specific traversal of the prefix tree.
 %
 \begin{examplebox}[Parse Tables as Trees]
 Suppose we are using the grammar from the beginning of Lecture~\ref{cha:TopDown} to parse \emph{the anvil hit Daffy} with a recursive descent parser.
@@ -154,7 +253,7 @@ So the parser can remove [0,PN VP] from the tree, which is tantamount to discard
 
 \end{examplebox}
 
-What makes the tree representation of parse tables appealing is that the construction and prioritization of parse tables can be reduced to strategies for tree building.
+What makes the tree representation of the parse space appealing is that the construction and prioritization of parse tables can be reduced to strategies for tree building.
 In particular, the familiar notions of depth-first and breadth-first carry over in a natural fashion.
 %
 \begin{description}
@@ -164,10 +263,10 @@ In particular, the familiar notions of depth-first and breadth-first carry over 
 %
 The depth first strategy leads to a parser that always builds a single complete parse history rather than multiple partial ones.
 If the parse history cannot be expanded anymore, the parser either stops (successful parse) or backtracks to the last choice point in the parse history and tries a different choice instead.
-This corresponds exactly to the notion of \emph{serial parsing} in the psycholinguistic literature.
+This corresponds exactly to the notion of serial parsing in the psycholinguistic literature, and as we saw in example~\ref{ex:TopDownEval_PriorityQueue} this can be implemented as a stack, i.e.\ a priority queue where new parse items are always added at the start of the queue.
 
 The intuitive counterpart of serial parsing is \emph{fully parallel parsing}, where all parse tables are built up at the same time.
-This is exactly the behavior of the breadth-first strategy.
+This is exactly the behavior of the breadth-first strategy or a priority queue where new parse items are added at the end
 However, even proponents of parallel parsing usually do not assume that the human parser computes and stores all options all the time.
 Instead, only a subset of very likely parses is claimed to be worked on in parallel, with all others either discarded or at least not expanded on.
 On a technical level we may formalize this in terms of a probabilistic procedure for which parse items may be expanded, and in which order.
@@ -486,6 +585,9 @@ A successful parse requires backtracking to the point where \emph{raced} is anal
     \end{center}
 \end{examplebox}
 
+In sum, the Frazier model can be defined more rigorously as a recursive descent parser with a stack as its priority queue.
+As the Frazier model is designed to account for garden paths, it is no surprise that its formal counterparts makes the right processing predictions in this case.
+
 \subsection{Center Embedding}
 \label{sub:TopDownEval_CenterEmbedding}
 It is a well-known fact that center embedding constructions are harder to parse than right embedding constructions, even if one controls for sentence length, discourse and vocabulary.
@@ -503,7 +605,7 @@ The specifics vary between accounts.
 
 \citet{Kimball73}, for instance, proposes that the parser cannot work on more than two sentences at once, i.e.\ it is possible to keep up to two CPs in memory, but not more than that.
 Right embedding of CPs is fine because opening a new CP is the last step needed to close the containing CP, which can subsequently be removed from memory.
-Center embedding, on the other hand, requires that both CPs be stored in memory, so it is natural limited to one level of embedding.
+Center embedding, on the other hand, requires that both CPs be stored in memory, so it is limited to one level of embedding.
 
 \posscitet{Gibson98} \emph{Syntactic Prediction Locality Theory} (SPLT) contends that memory burden increases the more dependencies need to be stored at the same time, and since center embedding of the type NP-S-VP necessarily involves starting a new dependency before the old one between NP and VP has been finished, center embedding is difficult.
 
@@ -744,13 +846,14 @@ Consider a grammar that licenses possessive structures such as the one below.
 In order to arrive at this structure, the parser must first infer [0,\psep NP VP], and then expand the NP to get [0,\psep NP Poss N VP].
 But now the parser once again has to expand the NP, possibly creating [0,\psep NP Poss N Poss N VP].
 It is easy to see that the parser can keep rewriting NP \emph{ad infinitum}, essentially looping the NP rewriting step and producing longer and longer parse items.
-Without a smart control structure that detects this kind of looping, the parser will soon run out of working memory, or if there is no limited on the amount of memory, keep looping forever without ever constructing a parse.
+Without a smart control structure that detects this kind of looping, the parser will soon run out of working memory, or if there is no limit on the amount of memory, keep looping forever without ever constructing a parse.
 
 A standard solution is to use a probabilistic control structure that prunes away all parse tables that fall below a certain probability threshold.
 As the parser keeps conjecturing bigger and bigger structures, the probability of these parses decreases until they are eventually pruned away.
-This also called a \emph{beam parser}.
+This is also called a \emph{beam parser}.
 Beam parsers require a method for automatically inferring the necessary probabilities from a corpus, and their overall behavior can be difficult to figure out.
 So the appealing simplicity of top-down parsers is lost to some extent.
+For more details on top-down beam parsing, see \citet{Roark01a, Roark01b, Roark04}.
 
 \subsection{Merely Local Syntactic Coherence Effects}
 \label{sub:TopDownEval_CoherenceEffects}
@@ -773,6 +876,7 @@ Since this interpretation is not available with \emph{thrown} due to the unambig
 Merely local syntactic coherence effects are completely unexpected with a top-down parser because there is no way the parser could infer an item that treats \emph{tossed} as a finite verb with \emph{the player} as its subject.
 The preceding parts of the sentence have already disambiguated the structure of the sentence to an extent where this is no longer a viable hypothesis.
 These effects are expected, however, if the parser proceeds bottom-up instead of top-down.
+More on that in chapter~\ref{cha:BottomUp}.
 
 \bibliographystyle{../../linquiry3}
 \bibliography{../../universal,../../graf}
