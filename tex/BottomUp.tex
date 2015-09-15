@@ -2,7 +2,7 @@
 \label{cha:BottomUp}
 
 The natural counterpart to top-down parsing is bottom-up parsing, where trees are built starting at the leaves and moving towards the root.
-Like top-down parsing, bottom-up parsing is fairly simple and builds the foundation of a variety of parsing algorithms.
+Like top-down parsing, bottom-up parsing is fairly simple and acts as the foundation of a variety of parsing algorithms.
 But just like top-down parsing, it has certain shortcomings regarding psycholinguistic adequacy.
 
 \section{Intuition}
@@ -10,21 +10,26 @@ But just like top-down parsing, it has certain shortcomings regarding psycholing
 For illustration we use the same grammar as for the top-down parser in Lecture~\ref{cha:TopDown}.
 %
 \begin{center}
-    \begin{tabular}{rrlp{3em}rrl}
-        1)  & S   & \rewrite\ NP VP               &  & 
-        6)  & Det & \rewrite\ a | the
+    \begin{tabular}{rrcl@{\hspace{2em}}rrcl}
+        1)  & S   & \rewrite\ & NP VP
+        &
+        6)  & Det & \rewrite\ & a | the
         \\
-        2)  & NP  & \rewrite\ PN                  &  & 
-        7)  & N   & \rewrite\ car | truck | anvil
+        2)  & NP  & \rewrite\ & PN
+        &
+        7)  & N   & \rewrite\ & car | truck | anvil
         \\
-        3)  & NP  & \rewrite\ Det N               &  & 
-        8)  & PN  & \rewrite\ Bugs | Daffy
+        3)  & NP  & \rewrite\ & Det
+        &
+        8)  & PN  & \rewrite\ & Bugs | Daffy
         \\
-        4)  & VP  & \rewrite\ Vi                  &  & 
-        9)  & Vi  & \rewrite\ fell over
+        4)  & VP  & \rewrite\ & Vi
+        &
+        9)  & Vi  & \rewrite\ & fell over
         \\
-        5)  & VP  & \rewrite\ Vt NP               &  & 
-        10) & Vt  & \rewrite\ hit
+        5)  & VP  & \rewrite\ & Vt NP
+        &
+        10) & Vt  & \rewrite\ & hit
         \\
     \end{tabular}
 \end{center}
@@ -164,7 +169,7 @@ Since bottom-up parsers are essentially the dual of top-down parsers, the former
 Whereas a top-down parser starts with $[0,S,n]$ and seeks to derive $[n,,n]$, the bottom-up parser has axiom $[0,,0]$ and goal $[0,S,n]$.
 So axioms and goals are simply switched (and $[n,,n]$ is replaced by $[0,,0]$).
 Similarly, the top-down scan and predict rules have bottom-up counterparts Shift and Reduce.
-The reduce rule is exactly the predict rule of a left-to-right top-down parser with top and bottom switched.
+The reduce rule is exactly the predict rule of a top-down parser with top and bottom switched.
 The shift rule is the scan rule of a right-to-left top-down parser with top and bottom switched. 
 
 \begin{prooftree}
@@ -182,7 +187,7 @@ The shift rule is the scan rule of a right-to-left top-down parser with top and 
 \end{prooftree}
 
 \begin{examplebox}[Bottom-up parse of \emph{The anvil hit Daffy}]
-    Here's an example for our standard example sentence \emph{The anvil hit Daffy} using the parsing schema above.
+    Here's a bottom-up parse table for our standard example sentence \emph{The anvil hit Daffy} using the parsing schema above.
     Note that rules are applied in arbitrary order to reflect the fact that the parsing schema still lacks a control structure and thus imposes no specific rule order.
     %
     \begin{center}
@@ -476,39 +481,40 @@ This rule is indispensable in cases where the symbol immediately after $\psep$ c
 \label{sub:BottomUp_GardenPaths}
 
 If the parser prioritizes reduction over shifting (which is up to the control structure), a serial shift reduce parser with backtracking makes similar predictions to a recursive descent parser.
+Garden path effects cannot arise if shifting is prioritized to such an extent that \emph{fell} is read in by the parser before it attempts to reduce \emph{raced} to a V.
 %
 \begin{examplebox}[Shift-reduce parse for \emph{The horse raced past the barn fell}]
     We operate with the same grammar as in \ref{sub:TopDownEval_FormalGardenPath}.
     %
     \begin{center}
-        \begin{tabular}{rrlp{2em}rrl}
-            1)  & S   & \rewrite NP VP
-                & & 
-            8)  & Det & \rewrite the
+        \begin{tabular}{rrcl@{\hspace{2em}}rrcl}
+            1)  & S   & \rewrite & NP VP
+                &
+            8)  & Det & \rewrite & the
             \\
-            2)  & NP  & \rewrite Det N
-                & &
-            9)  & N   & \rewrite barn
+            2)  & NP  & \rewrite & Det N
+                &
+            9)  & N   & \rewrite & barn
             \\
-            3)  & NP  & \rewrite Det N VP$_\mathit{rel}$
-                & & 
-            10) & N   & \rewrite horse 
+            3)  & NP  & \rewrite & Det N VP$_\mathit{rel}$
+                &
+            10) & N   & \rewrite & horse 
             \\
-            4)  & VP  & \rewrite V
-                & & 
-            11) & P   & \rewrite past
+            4)  & VP  & \rewrite & V
+                &
+            11) & P   & \rewrite & past
             \\
-            5)  & VP  & \rewrite V PP
-                & & 
-            12) & V   & \rewrite fell 
+            5)  & VP  & \rewrite & V PP
+                &
+            12) & V   & \rewrite & fell 
             \\
-            6)  & VP$_\mathit{rel}$  & \rewrite V$_\mathit{rel}$ PP
-                & & 
-            13) & V   & \rewrite raced
+            6)  & VP$_\mathit{rel}$  & \rewrite & V$_\mathit{rel}$ PP
+                &
+            13) & V   & \rewrite & raced
             \\
-            7)  & PP  & \rewrite P NP
-                & & 
-            14) & V$_\mathit{rel}$   & \rewrite raced
+            7)  & PP  & \rewrite & P NP
+                &
+            14) & V$_\mathit{rel}$ & \rewrite & raced
         \end{tabular}
     \end{center}
     %
@@ -726,14 +732,14 @@ Just like the top-down parser, the bottom-up parser predicts center embedding co
 \end{examplebox}
 %
 In contrast to the top-down parser, however, the bottom-up parser doesn't fare any better with the right embedding construction.
-So just like the top-down parser predicts center embedding to be difficult simply because center embedding involves left embedding dependencies, which top-down parsers struggle with, the bottom-up parser apparently struggles with center embedding because it also struggles with right embedding.
+So just like the top-down parser predicts center embedding to be difficult simply because center embedding involves left embedding dependencies and those are problematic for top-down parsers, the bottom-up parser apparently struggles with center embedding because it also struggles with right embedding.
 The reason is simple:
 %
 \begin{enumerate}
-    \item Reduction is of A and B to C is possible only if both A and B have already been recognized.
-    \item The shift reduce parser fully assembles A before getting started on B.
-        Hence the time A must be stored in memory is directly proportional to the size of B.
-    \item Right embedding increases the size of B.
+    \item Reduction of $A$ and $B$ to $C$ is possible only if both $A$ and $B$ have already been recognized.
+    \item The shift reduce parser fully assembles $A$ before getting started on $B$.
+        Hence the time $A$ must be stored in memory is directly proportional to the size of $B$.
+    \item Right embedding increases the size of $B$.
 \end{enumerate}
 %
 \begin{examplebox}[Run of shift reduce parser over right embedding sentence]
@@ -949,6 +955,7 @@ Table~\ref{tab:BottomUp_PerformanceComparison} compares the performance of the r
     Last time we saw that left-to-right top-down parsers cannot account for merely local syntactic coherence effects, irrespective of whether one proceeds depth-first or breadth-first.
     Can a bottom-up parser account for this phenomenon?
     Does it have to use a specific search method (depth-first VS breadth-first)?
+    Do shift and reduce need to be prioritized in a specific fashion?
 \end{exercise}
 
 \subsection{General Remarks}
