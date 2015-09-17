@@ -415,6 +415,54 @@ This is also called a \emph{step contraction} \citep{Sikkel97}: a sequence of in
 
 \subsection{Adding Top-Down Filtering}
 
+As the predict rule of the LC parser is conditioned by the presence of recognized material, bottom-up information serves to prune down the number of possible predictions.
+Note, however, that reduction steps can still apply very freely.
+This is somewhat wasteful.
+Top-down information should also be used to restrict the set of reductions, and as we will see next this is very simple in an LC parser.
+
+Consider once again the LC parse for the sentence \emph{the anvil hit Daffy}, and suppose that our grammar allows for \emph{hit} to be reduced to either N or Vt (only the latter is the case in our usual toy grammar).
+The parser does not encounter \emph{hit} in the input until a VP has already been predicted: first the parser recognizes then NP, then it uses NP as the left corner for predicting S and VP, and then it shifts one word to the right in the input and finally reads in \emph{hit}.
+A quick glance at our grammar will reveal that it is impossible for \emph{hit} to be a noun in this parse.
+Obviously \emph{hit} must be the leftmost word of the string spanned by the VP, and there is no sequence of rewrite rules in our grammar that could generate a VP with a noun at its left edge.
+If we could incorporate that line of reasoning into the inference rules of the parser, we might be able to save us a lot of work exploring doomed parses.
+
+This idea can be made precise by generalizing the notion of left corner.
+So far, a left corner was defined as the leftmost element of the right-hand side of a rule.
+This will now be given the more specific term \emph{direct left corner}, and $X$ is a left corner of $Z$ iff $X = Z$ or there are $Y_1, \ldots, Y_n$ such that $X$ is the left corner of $Y_1$, each $Y_i$ is a left corner of $Y_{i+1}$, and $Y_n$ is the left corner of $Y_n$.
+More succinctly:
+%
+\begin{definition}[Left Corner]
+    The \emph{direct left corner relation} holds between $X$ and $Y$ in grammar $G$ iff $G$ contains a rewrite rule $Y \rewrite X \beta$, $\beta \in (N \cup T)^*$.
+    The \emph{left corner relation} $\LeftCorner$ is the reflexive transitive closure of the direct left corner relation.
+    We write $\LeftCorner(Y)$ for the set $\setof{X \mid \tuple{X,Y} \in \LeftCorner}$ of left corners of $Y$.
+\end{definition}
+%
+If this is still confusing to you, just remember that $X$ is a left corner of $Y$ iff our grammar can generate a subtree with root $Y$ where $X$ is the root or occurs along the leftmost branch.
+
+Keep in mind that we can compute in advance for every pair of non-terminals $X$ and $Y$ whether $X$ is a left corner of $Y$.
+So we can use the left corner relation as a side condition in our inference rules without worrying about whether they can still be refined into a parsing system.
+%
+\begin{exercise}
+    Explain step by step why this is the case.
+    What properties of CFGs, parsing systems, and the left corner relation are relevant here?
+\end{exercise}
+%
+All we have to do now is to add a side condition to the reduce rule that implements Top-Down filtering.
+%
+\begin{prooftree}
+    \AxiomC{$[i, \alpha \gamma \psep \beta]$}
+    \LeftLabel{\textbf{Reduce}\qquad}
+    \RightLabel{$N \rewrite \gamma \in R$, and if $\beta = [_X Y] \gamma$ then $N \in \LeftCorner(Y)$}
+    \UnaryInfC{$[i, \alpha N \psep \beta]$}
+\end{prooftree}
+%
+\begin{exercise}
+    Consider a modified version of our toy grammar that also contains the rewrite rule N \rewrite\ hit.
+    For each non-terminal, compute its set of left corners.
+    Then write down a detailed parse table of \emph{the anvil hit Daffy} and highlight the step at which the parser is forced to reduce \emph{hit} to a verb.
+\end{exercise}
+
+
 \subsection{Generalized Left-Corner Parsing}
 \label{sub:LeftCorner_Generalized}
 
