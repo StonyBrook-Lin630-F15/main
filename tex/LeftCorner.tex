@@ -470,26 +470,30 @@ The left-corner parser combines top-down and bottom-up in a specific manner: one
 This weighting of bottom-up and top-down can be altered by changing the number of symbols that need to be present.
 That is to say, the left-corner of a rule is no longer just the leftmost symbol of its right side, but rather a prefix of the right side.
 For instance, if the number is increased to $2$, then NP \rewrite\ Det A N could be used to predict N and NP only after Det and A have been identified.
-An LC parser where left corners are string of length $2$ or more is called a \emph{generalized left-corner parser}.
+We can also let this threshold vary between rewrite rules to hold off on cases with more ambiguity while committing quickly whenever a specific rewrite step is much more likely than the alternatives.
+
+An LC parser where the threshold for predictions is allowed to vary for each rule is called a \emph{generalized left-corner parser} (GLC).
 It uses the same rules as a standard left-corner parser, except that the prediction rule is slightly modified.
+First, assume that each rewrite rule is associated with a specific index that indicates the threshold at which the left corner prediction is triggered.
+We can indicate this position pictorially by putting a $\star$ at the appropriate position in the rewrite rule.
+For example, NP \rewrite\ Det A N might be written NP \rewrite Det A $\star$ N.
+Then we can generalize the predict rule from a simple LC parser to a GLC parser.
 %
 \begin{prooftree}
     \AxiomC{$[i, \alpha \delta \psep \beta]$}
     \LeftLabel{\textbf{Predict}\qquad}
-    \RightLabel{$M \rewrite \delta \gamma \in R$}
+    \RightLabel{$M \rewrite \delta \star \gamma \in R$}
     \UnaryInfC{$[i, \alpha \psep [_M\ \gamma ]\ \beta]$}
 \end{prooftree}
 
-Notice the close connection to bottom-up and top-down parsing.
-A bottom-up parser is a generalized left-corner parser that requires $\delta\gamma = \delta$, so $M$ is predicted only if all its daughters have already been identified.
+The GLC parser points out yet another close connection to top-down and bottom-up parsing, which now turn out to simply be special cases of the latter.
+A bottom-up parser is a GLC parser where the star is always at the end of a rewrite rule, so $M$ is predicted only if all its daughters have already been identified.
 In this case the prediction rule turns $[i, \alpha \delta \psep \beta]$ into $[i, \alpha \psep [_M] \beta]$, which the completion rule turns into $[i, \alpha M \psep]$.
-The reduce rule is just a shorthand for running these two rules immediately one after another.
+So bottom-up reduction is a step contraction of prediction followed by completion.
 
-A top-down parser is similar to a generalized left-corner parser where $\delta$ is the empty string, so the prediction rule is never restricted by a left corner.
-This analogy is not completely right, however, because such a generalized left-corner parser can predict any rule at any given point, whereas the top-down parser must make predictions that are licit rewritings of non-terminal symbols in the parse items.
-
-Still, generalized left-corner parsing is a straight-forward extension of left-corner parsing that allows altering how much weight is put on top-down prediction versus bottom-up confirmation.
-
+A top-down parser is similar to a GLC parser where the star is always at the beginning of the right-hand side of the rewrite rule, so the prediction rule is never restricted by a left corner.
+This analogy is not completely right, however, because such a GLC parser can predict any rule at any given point, whereas the top-down parser must make predictions that are licit rewritings of non-terminal symbols in the parse items.
+But LC parsers are nonetheless very closely related to top-down parsing, as we will see in the next section.
 
 \section{Left Corner Parsing as Top-Down Parsing} 
 
