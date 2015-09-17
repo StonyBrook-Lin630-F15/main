@@ -1,22 +1,26 @@
 \chapter{Left-Corner Parsing}
 \label{cha:LeftCorner}
 
-Top-down parsers and bottom-up parsers each turned out to have both their advantages and disadvantages.
-Top-down parsers are purely predictive, the input string is only checked against fully built branches --- those that end in a terminal symbol --- but does not guide the prediction process itself.
+Top-down parsers and bottom-up parsers each turned out to have their advantages as well as their disadvantages.
+Top-down parsers are purely predictive.
+The input string is only checked against fully built branches --- those that end in a terminal symbol --- but does not guide the prediction process itself.
 Bottom-up parsers are purely driven by the input string and lack any kind of predictiveness.
 In particular, a bottom-up parser may entertain analyses for the substring spanning from position $i$ to $j$ that are incompatible with the analysis for the substring from $0$ to $i-1$.
-Neither behavior seems to be followed by the human parser.
-The parser is predictive, since ungrammatical sentences are recognized as such as soon as the structure becomes unsalvageable.
-At the same time, though, the prediction process is guided by the input seen so far.
-What we need, then, is a formal parsing model that integrates top-down prediction and bottom-up reduction.
+Neither behavior seems to be followed by the human parser all the time.
+
+Merely local syntactic coherence effects suggest that the human parser sometimes entertains incompatible parses, just like bottom-up parsers.
+But these effects are very rare and very minor compared to, say, the obvious difficulties with garden path sentences.
+The human parser is also predictive since ungrammatical sentences are recognized as such as soon as the structure becomes unsalvageable.
+At the same time, though, the prediction process differs (at least naively) from pure top-down parsing as it seems to be actively guided by the input.
+What we should look at, then, is a formal parsing model that integrates top-down prediction and bottom-up reduction.
 Left-corner parsing does exactly that.
 
 \section{Intuition}
 \label{sec:LeftCorner_Intuition}
 
-The ingenious idea of left-corner parsing is to restrict the prediction step such that the parser conjectures $X$ only if there is already some bottom-up evidence for the existence of $X$.
+The ingenious idea of left-corner (LC) parsing is to restrict the top-down prediction step such that the parser conjectures $X$ only if there is already some bottom-up evidence for the existence of $X$.
 More precisely, the parser conjectures an XP only if a \emph{possible left corner of $X$} has already been identified.
-The \emph{left corner of a rewrite rule} is the leftmost symbol on the righthand side of the rewrite arrow (intuitively, the symbol the arrow points at).
+The \emph{left corner of a rewrite rule} is the leftmost symbol on the righthand side of the rewrite arrow. 
 For instance, the left corner of NP \rewrite\ Det N is Det.
 Thus $Y$ is a possible left corner of $X$ only if the grammar contains a rewrite rule $X$ \rewrite\ $Y$ $\gamma$.
 In this case, the parser may conjecture the existence of $X$ and $\gamma$ once it has reached $Y$ in a bottom-up fashion.
@@ -24,31 +28,96 @@ In this case, the parser may conjecture the existence of $X$ and $\gamma$ once i
 Consider our familiar toy grammar.
 %
 \begin{center}
-    \begin{tabular}{rrlp{3em}rrl}
-        1)  & S   & \rewrite\ NP VP               &  & 
-        6)  & Det & \rewrite\ a | the
+    \begin{tabular}{rrcl@{\hspace{2em}}rrcl}
+        1)  & S   & \rewrite\ & NP VP
+        &
+        6)  & Det & \rewrite\ & a | the
         \\
-        2)  & NP  & \rewrite\ PN                  &  & 
-        7)  & N   & \rewrite\ car | truck | anvil
+        2)  & NP  & \rewrite\ & PN
+        &
+        7)  & N   & \rewrite\ & car | truck | anvil
         \\
-        3)  & NP  & \rewrite\ Det N               &  & 
-        8)  & PN  & \rewrite\ Bugs | Daffy
+        3)  & NP  & \rewrite\ & Det
+        &
+        8)  & PN  & \rewrite\ & Bugs | Daffy
         \\
-        4)  & VP  & \rewrite\ Vi                  &  & 
-        9)  & Vi  & \rewrite\ fell over
+        4)  & VP  & \rewrite\ & Vi
+        &
+        9)  & Vi  & \rewrite\ & fell over
         \\
-        5)  & VP  & \rewrite\ Vt NP               &  & 
-        10) & Vt  & \rewrite\ hit
+        5)  & VP  & \rewrite\ & Vt NP
+        &
+        10) & Vt  & \rewrite\ & hit
         \\
     \end{tabular}
 \end{center}
 %
-Rather than conjecturing S \rewrite\ NP VP right away, the parser has to wait until it has identified an NP before it can try to build an S\@.
-The NP, in turn, must be found bottom-up.
+Rather than conjecturing S \rewrite\ NP VP right away, an LC parser waits until it has identified an NP before it tries to build an S\@.
+The NP, in turn, must be found in a bottom-up fashion.
 This may involve a sequence of bottom-up reductions: read \emph{Daffy}, reduce \emph{Daffy} to PN, reduce PN to NP\@.
-Alternatively, it may involve a mixture of bottom-up reduction and left-corner condition prediction: read \emph{the}, reduce to Det, use the rewrite rule NP \rewrite\ Det N in your top-down prediction, read \emph{anvil}, reduce to N, reduce Det N to NP\@.
-Now that the NP has been identified, the parser may use S \rewrite\ NP VP in a prediction step.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \node (Daffy) {Daffy};
 
+        \node [right=3em of Daffy] (PN-Daffy) {Daffy};
+        \node [above=1.5em of PN-Daffy] (PN) {PN};
+
+        \node [right=3em of PN-Daffy] (NP-Daffy) {Daffy};
+        \node [above=1.5em of NP-Daffy] (NP-PN) {PN};
+        \node [above=1.5em of NP-PN]    (NP) {NP};
+
+        \foreach \Source/\Target in {PN-Daffy/PN, NP-Daffy/NP-PN, NP-PN/NP}
+            \draw (\Source) to (\Target);
+    \end{tikzpicture}
+\end{center}
+%
+Alternatively, it may involve a mixture of bottom-up reduction and left-corner condition prediction: read \emph{the}, reduce to Det, use the rewrite rule NP \rewrite\ Det N in your top-down prediction, read \emph{anvil}, reduce to N, reduce Det N to NP\@.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \node (the) {the};
+
+        \node [right=3em of the] (Det-the) {the};
+        \node [above=1.5em of Det-the] (Det) {Det};
+
+        \node [right=3em of Det-the] (NP-the) {the};
+        \node [above=1.5em of NP-the] (NP-Det) {Det};
+        \node [right=1.5em of NP-Det] (NP-N) {N};
+        \node (NP) at ($(NP-Det) !.5! (NP-N)$) [yshift=2.5em] {NP};
+
+        \node [right=5.5em of NP-the] (anvil-the) {the};
+        \node [above=1.5em of anvil-the] (anvil-Det) {Det};
+        \node [right=1.5em of anvil-Det] (anvil-N) {N};
+        \node (anvil-NP) at ($(anvil-Det) !.5! (anvil-N)$) [yshift=2.5em] {NP};
+        \node [below=1.5em of anvil-N] (anvil) {anvil};
+
+        \node [right=5.5em of anvil-the] (full-the) {the};
+        \node [above=1.5em of full-the] (full-Det) {Det};
+        \node [right=1.5em of full-Det] (full-N) {N};
+        \node (full-NP) at ($(full-Det) !.5! (full-N)$) [yshift=2.5em] {NP};
+        \node [below=1.5em of full-N] (full-anvil) {anvil};
+
+        \foreach \Source/\Target in {%
+                                     Det-the/Det,
+                                     NP-the/NP-Det,
+                                     NP-Det/NP,
+                                     NP-N/NP,
+                                     anvil-the/anvil-Det,
+                                     anvil-N/anvil-NP,
+                                     anvil-Det/anvil-NP,
+                                     full-the/full-Det,
+                                     full-anvil/full-N,
+                                     full-Det/full-NP,
+                                     full-N/full-NP%
+                                 }
+            \draw (\Source) to (\Target);
+    \end{tikzpicture}
+\end{center}
+%
+Once the NP has been identified, the parser may use S \rewrite\ NP VP in a prediction step.
+The full parse for \emph{the anvil hit Daffy} is depicted in tabular format below.
+%
 \begin{center}
     \begin{tabular}{r|c|l}
         \textbf{string} & \textbf{rule}          & \textbf{predictions}\\
@@ -70,14 +139,14 @@ Now that the NP has been identified, the parser may use S \rewrite\ NP VP in a p
 \end{center}
 
 The usual four way split between depth-first or breadth-first on the one hand and left-to-right versus right-to-left on the other makes little sense for left-corner parsers.
-The standard left-corner parser is depth-first left-to-right.
-A breadth-first left-corner parser behaves like a bottom-up parser if left-corner predictions are delayed, or like a depth-first left-corner parser if they apply as usual.
-And a right-to-left depth-first left-corner parser has no use for left-corner predictions since the predicted material has already been inferred in a bottom-up fashion anyways.
+The standard LC parser is depth-first left-to-right.
+A breadth-first LC parser behaves like a bottom-up parser if LC predictions are delayed, or like a depth-first LC parser if they apply as usual.
+And a right-to-left depth-first LC parser has no use for LC predictions since the predicted material has already been inferred in a bottom-up fashion anyways.
 %
 \begin{center}
     \begin{tikzpicture}
         \Tree
-            [.\Lab{S}{5}{11}
+            [.\Lab{S}{6}{13}
                 [.\Lab{NP}{3}{5}
                     [.\Lab{Det}{2}{3}
                         \Lab{the}{1}{2}
@@ -86,13 +155,13 @@ And a right-to-left depth-first left-corner parser has no use for left-corner pr
                         \Lab{anvil}{4}{5}
                     ]
                 ]
-                [.\Lab{VP}{5}{11}
-                    [.\Lab{Vt}{7}{8}
-                        \Lab{hit}{6}{7}
+                [.\Lab{VP}{6}{13}
+                    [.\Lab{Vt}{8}{9}
+                        \Lab{hit}{7}{8}
                     ]
-                    [.\Lab{NP}{8}{11}
-                        [.\Lab{PN}{10}{11}
-                            \Lab{Daffy}{9}{10}
+                    [.\Lab{NP}{10}{13}
+                        [.\Lab{PN}{12}{13}
+                            \Lab{Daffy}{11}{12}
                         ]
                     ]
                 ]
@@ -101,6 +170,7 @@ And a right-to-left depth-first left-corner parser has no use for left-corner pr
 \end{center}
 
 \begin{exercise}
+    The tree above shows how LC parsing can be represented via our usual annotation scheme of indices and outdices.
     What would the annotated trees look like for
     %
     \begin{itemize}
@@ -118,13 +188,17 @@ And a right-to-left depth-first left-corner parser has no use for left-corner pr
     \end{itemize}
 \end{exercise}
 
+\begin{exercise}
+    Building on your insights from the previous exercise, explain why a breadth-first LC parser is either a bottom-up parser or behaves exactly like a depth-first left-corner parser.
+\end{exercise}
+
 \section{Formal Specification}
 \label{sec:LeftCorner_Formal}
 
 \subsection{Standard Left-Corner Parser}
 \label{sub:LeftCorner_Standard}
 
-Since the usual parameters make little sense for a left-corner parser, no control structure is needed and it suffices to define the parsing schema.
+Since the usual parameters make little sense for a left-corner parser, we immediately define the parsing schema with some of the control structure incorporated via the familiar dot $\psep$.
 The parser has to keep track of four distinct pieces of information:
 %
 \begin{itemize}
@@ -138,8 +212,8 @@ Our items take the form $[i, \alpha \psep \beta]$, where
 %
 \begin{itemize}
     \item $i$ is the current position in the string,
-    \item $\alpha$ is the list of identified unused nodes, and
-    \item $\beta$ is a list of labeled lists of phrases to be built.
+    \item $\alpha$ is the list of identified unused nodes (derived via bottom-up reduction), and
+    \item $\beta$ is a list of labeled lists of phrases to be built (the top-down predictions).
 \end{itemize}
 %
 For instance, the item [1, \psep [\tsb{NP} N]] encodes that if position 1 is followed by an N, we can build an NP\@.
@@ -183,26 +257,10 @@ The parser uses five rules, four of which are generalizations of the familiar to
 
 The shift rule reads in new input, and the reduce rule replaces the right-hand side of a rewrite rule by its left-hand side, thereby building structure in the usual bottom-up fashion.
 The scan rule eliminates a predicted symbol against an existing one, just like the top-down scan rule eliminates a predicted terminal symbol if a matching symbol can be found in the input at this position.%
-\footnote{
-    The scan rule of the recursive descent parser can decomposed into a shift rule and a second rule that closely mirrors the scan rule above:
-    %
-    \begin{prooftree}
-        \AxiomC{$[i, \psep \beta]$}
-        \LeftLabel{\textbf{Shift}\qquad}
-        \RightLabel{$a = w_{i}$}
-        \UnaryInfC{$[i+1, a \psep \beta]$}
-    \end{prooftree}
-    %
-    \begin{prooftree}
-        \AxiomC{$[i, a \psep a \beta]$}
-        \LeftLabel{\textbf{Scan}\qquad}
-        \UnaryInfC{$[i,\psep \beta]$}
-    \end{prooftree}
-}
 
-The predict rule necessarily extends the prediction mechanism of a standard top-down parser since left-corner prediction proceeds both bottom-up, inferring the symbol to the left of the rewrite arrow, and top-down, inferring the sister nodes to the right.
+The predict rule necessarily extends the prediction mechanism of a standard top-down parser since left-corner prediction is conditioned both bottom-up, when it infers the symbol to the left of the rewrite arrow, and top-down, when it infers the sister nodes to the right.
 An existing left-corner $N$ is removed, and instead we add to $\beta$ a list that is labeled with the conjectured mother of $N$ and contains the conjectured sisters of $N$.
-The completion rule, finally, states that once we've completely exhausted a list --- i.e.\ all the conjectured siblings have been identified --- the phrase that can be built from the elements in this list is promoted from a mere conjecture to a certainty, which technically amounts to pushing it to the left side of $\psep$.
+The completion rule, finally, states that once we have completely exhausted a list --- i.e.\ all the conjectured siblings have been identified --- the phrase that can be built from the elements in this list is promoted from a mere conjecture to a certainty, which is formally encoded by pushing it to the left side of $\psep$.
 
 \begin{examplebox}[Left-corner parse of \emph{The anvil hit Daffy}]
     \phantom{a}
@@ -236,8 +294,10 @@ The choice of $\psep$ as a separator with identified material to the left and pr
 Recall that the recursive descent parser is a purely predictive parser, and in all its parse items $\psep$ occurred to the very left.
 So the predicted material was trivially to the right of $\psep$.
 Similarly, the shift reduce parser is completely free of any predictions, and the material built via shift and reduce was always to the left of $\psep$.
-Viewed from this perspective, the inference rules of the left-corner parser highlight its connections to top-down and bottom-up parsing (cf.\ Tab.~\ref{tab:LeftCorner_ParserComparison}).
-
+So $\psep$ indicates the demarkation line between confirmed and conjectured material in all three parsers.
+Viewed from this perspective, the inference rules of the left-corner parser highlight its connections to top-down and bottom-up parsing.
+This becomes even more apparent when the inference rules of the parser are aligned next to each other as in Tab.~\ref{tab:LeftCorner_ParserComparison}) (the empty sides of recursive descent and shift reduce parsers are filled by variables to highlight the parallel to LC parsing).
+%
 \begin{table}[tbph]
     \begin{tabular}{rp{2em}ccc}
              & & \textbf{Top-Down}
@@ -331,6 +391,30 @@ Viewed from this perspective, the inference rules of the left-corner parser high
 \label{tab:LeftCorner_ParserComparison}
 \end{table}
 
+The connections between the parsers can be strengthened even more.
+The scan rule of the recursive descent parser does not quite match the one in the LC parser, it looks as if the two are performing very different tasks.
+The former checks a prediction against the input, the latter cancels out a prediction against some previously found material.
+But this is in fact just a generalization of recursive descent scanning from terminals to non-terminals.
+To make this more apparent, we can decompose the recursive descent scanning rule into a shift rule and a second rule that closely mirrors the LC scan rule:
+%
+\begin{prooftree}
+    \AxiomC{$[i, \psep \beta]$}
+    \LeftLabel{\textbf{Shift}\qquad}
+    \RightLabel{$a = w_{i}$}
+    \UnaryInfC{$[i+1, a \psep \beta]$}
+\end{prooftree}
+%
+\begin{prooftree}
+    \AxiomC{$[i, a \psep a \beta]$}
+    \LeftLabel{\textbf{Scan}\qquad}
+    \UnaryInfC{$[i,\psep \beta]$}
+\end{prooftree}
+%
+So the scan rule we used for the recursive descent parser is just a convenient shorthand for shift followed by scan as defined above.
+This is also called a \emph{step contraction} \citep{Sikkel97}: a sequence of inference rules is compressed into the application of a single inference rule.
+
+\subsection{Adding Top-Down Filtering}
+
 \subsection{Generalized Left-Corner Parsing}
 \label{sub:LeftCorner_Generalized}
 
@@ -338,7 +422,7 @@ The left-corner parser combines top-down and bottom-up in a specific manner: one
 This weighting of bottom-up and top-down can be altered by changing the number of symbols that need to be present.
 That is to say, the left-corner of a rule is no longer just the leftmost symbol of its right side, but rather a prefix of the right side.
 For instance, if the number is increased to $2$, then NP \rewrite\ Det A N could be used to predict N and NP only after Det and A have been identified.
-A left-corner parser where left corners are string of length $2$ or more is called a \emph{generalized left-corner parser}.
+An LC parser where left corners are string of length $2$ or more is called a \emph{generalized left-corner parser}.
 It uses the same rules as a standard left-corner parser, except that the prediction rule is slightly modified.
 %
 \begin{prooftree}
@@ -358,7 +442,8 @@ This analogy is not completely right, however, because such a generalized left-c
 
 Still, generalized left-corner parsing is a straight-forward extension of left-corner parsing that allows altering how much weight is put on top-down prediction versus bottom-up confirmation.
 
-\section{Relation to Earley and Bottom-Up Parsing}
+
+\section{Left Corner Parsing as Top-Down Parsing} 
 
 \section{Psycholinguistic Adequacy}
 \label{sec:LeftCorner_Evaluation}
@@ -378,3 +463,6 @@ Still, generalized left-corner parsing is a straight-forward extension of left-c
 \begin{exercise}
     Are merely local syntactic coherence effects expected with a left-corner parser?
 \end{exercise}
+
+\bibliographystyle{./linquiry3}
+\bibliography{./universal,./graf}
