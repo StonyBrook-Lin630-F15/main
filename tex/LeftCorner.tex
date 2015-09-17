@@ -146,7 +146,7 @@ And a right-to-left depth-first LC parser has no use for LC predictions since th
 \begin{center}
     \begin{tikzpicture}
         \Tree
-            [.\Lab{S}{6}{13}
+            [.\Lab{S}{6}{12}
                 [.\Lab{NP}{3}{5}
                     [.\Lab{Det}{2}{3}
                         \Lab{the}{1}{2}
@@ -155,13 +155,13 @@ And a right-to-left depth-first LC parser has no use for LC predictions since th
                         \Lab{anvil}{4}{5}
                     ]
                 ]
-                [.\Lab{VP}{6}{13}
+                [.\Lab{VP}{6}{12}
                     [.\Lab{Vt}{8}{9}
                         \Lab{hit}{7}{8}
                     ]
-                    [.\Lab{NP}{10}{13}
-                        [.\Lab{PN}{12}{13}
-                            \Lab{Daffy}{11}{12}
+                    [.\Lab{NP}{9}{12}
+                        [.\Lab{PN}{11}{12}
+                            \Lab{Daffy}{10}{11}
                         ]
                     ]
                 ]
@@ -289,6 +289,17 @@ The completion rule, finally, states that once we have completely exhausted a li
         \end{tabular}
     \end{center}
 \end{examplebox}
+%
+\begin{exercise}
+    Consider the minimally different \emph{The anvil suddenly hit Daffy} and \emph{The anvil hit Daffy suddenly}.    
+    \begin{enumerate}
+        \item Add appropriate rewrite rules to our toy grammar so that they can generate these sentences, with \emph{suddenly} analyzed as a VP-adjunct.
+        \item Write down the parse tables for both sentences.
+        \item At what point do they differ from the one for \emph{The anvil hit Daffy}?
+        \item Upon careful inspection, it is clear that \emph{The anvil suddenly hit Daffy} is less likely to be misanalyzed by the LC parser than \emph{The anvil hit Daffy suddenly}.
+            Explain why!
+    \end{enumerate}
+\end{exercise}
 
 The choice of $\psep$ as a separator with identified material to the left and predicted material to the right is not accidental.
 Recall that the recursive descent parser is a purely predictive parser, and in all its parse items $\psep$ occurred to the very left.
@@ -413,8 +424,12 @@ To make this more apparent, we can decompose the recursive descent scanning rule
 So the scan rule we used for the recursive descent parser is just a convenient shorthand for shift followed by scan as defined above.
 This is also called a \emph{step contraction} \citep{Sikkel97}: a sequence of inference rules is compressed into the application of a single inference rule.
 
-\subsection{Adding Top-Down Filtering}
+\begin{exercise}
+    The LC parser itself also contains a step contraction.
+    Show that the reduce rule is just a step contraction of two other inference rules.
+\end{exercise}
 
+\subsection{Adding Top-Down Filtering}
 As the predict rule of the LC parser is conditioned by the presence of recognized material, bottom-up information serves to prune down the number of possible predictions.
 Note, however, that reduction steps can still apply very freely.
 This is somewhat wasteful.
@@ -447,12 +462,12 @@ So we can use the left corner relation as a side condition in our inference rule
     What properties of CFGs, parsing systems, and the left corner relation are relevant here?
 \end{exercise}
 %
-All we have to do now is to add a side condition to the reduce rule that implements Top-Down filtering.
+All we have to do now is to add a side condition to the reduce rule that implements top-down filtering.
 %
 \begin{prooftree}
     \AxiomC{$[i, \alpha \gamma \psep \beta]$}
     \LeftLabel{\textbf{Reduce}\qquad}
-    \RightLabel{$N \rewrite \gamma \in R$, and if $\beta = [_X Y] \gamma$ then $N \in \LeftCorner(Y)$}
+    \RightLabel{$N \rewrite \gamma \in R$, and if $\beta = [_X Y] \delta$ then $N \in \LeftCorner(Y)$}
     \UnaryInfC{$[i, \alpha N \psep \beta]$}
 \end{prooftree}
 %
@@ -460,6 +475,13 @@ All we have to do now is to add a side condition to the reduce rule that impleme
     Consider a modified version of our toy grammar that also contains the rewrite rule N \rewrite\ hit.
     For each non-terminal, compute its set of left corners.
     Then write down a detailed parse table of \emph{the anvil hit Daffy} and highlight the step at which the parser is forced to reduce \emph{hit} to a verb.
+\end{exercise}
+%
+\begin{exercise}
+    In an earlier exercise you had to show that the reduce rule is a step contraction of two other rules.
+    Consequently, restricting the applicability of reduce is not enough to add top-down filtering since the parser also has an alternative means of reducing that is still completely unrestricted.
+    Try to patch up this loop hole.
+    \emph{Hint}: you can either put a similar restriction on those other two rules or ensure that the two can no longer be used as an alternative to reduce.
 \end{exercise}
 
 
@@ -495,7 +517,7 @@ A top-down parser is similar to a GLC parser where the star is always at the beg
 This analogy is not completely right, however, because such a GLC parser can predict any rule at any given point, whereas the top-down parser must make predictions that are licit rewritings of non-terminal symbols in the parse items.
 But LC parsers are nonetheless very closely related to top-down parsing, as we will see in the next section.
 
-\section{Left Corner Parsing as Top-Down Parsing} 
+\section{Left-Corner Parsing as Top-Down Parsing} 
 
 \section{Psycholinguistic Adequacy}
 \label{sec:LeftCorner_Evaluation}
@@ -516,5 +538,5 @@ But LC parsers are nonetheless very closely related to top-down parsing, as we w
     Are merely local syntactic coherence effects expected with a left-corner parser?
 \end{exercise}
 
-\bibliographystyle{./linquiry3}
-\bibliography{./universal,./graf}
+\bibliographystyle{./bib/linquiry3}
+\bibliography{./bib/universal,./bib/graf}
