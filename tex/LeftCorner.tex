@@ -37,7 +37,7 @@ Consider our familiar toy grammar.
         &
         7)  & N   & \rewrite\ & car | truck | anvil
         \\
-        3)  & NP  & \rewrite\ & Det
+        3)  & NP  & \rewrite\ & Det N
         &
         8)  & PN  & \rewrite\ & Bugs | Daffy
         \\
@@ -68,7 +68,7 @@ This may involve a sequence of bottom-up reductions: read \emph{Daffy}, reduce \
         \node [above=1.5em of NP-PN]    (NP) {NP};
 
         \foreach \Source/\Target in {PN-Daffy/PN, NP-Daffy/NP-PN, NP-PN/NP}
-            \draw (\Source) to (\Target);
+            \draw (\Source.north) to (\Target.south);
     \end{tikzpicture}
 \end{center}
 %
@@ -111,7 +111,7 @@ Alternatively, it may involve a mixture of bottom-up reduction and left-corner c
                                      full-Det/full-NP,
                                      full-N/full-NP%
                                  }
-            \draw (\Source) to (\Target);
+            \draw (\Source.north) to (\Target.south);
     \end{tikzpicture}
 \end{center}
 %
@@ -263,6 +263,7 @@ An existing left-corner $N$ is removed, and instead we add to $\beta$ a list tha
 The completion rule, finally, states that once we have completely exhausted a list --- i.e.\ all the conjectured siblings have been identified --- the phrase that can be built from the elements in this list is promoted from a mere conjecture to a certainty, which is formally encoded by pushing it to the left side of $\psep$.
 
 \begin{examplebox}[Left-corner parse of \emph{The anvil hit Daffy}]
+    \label{ex:LC_ParseTable}
     \phantom{a}
     \begin{center}
         \begin{tabular}{r|l}
@@ -277,7 +278,7 @@ The completion rule, finally, states that once we have completely exhausted a li
             $\lbrack$2,NP \psep ] & complete\\
             $\lbrack$2,\psep [\tsb{S} VP]] & predict(1)\\
             $\lbrack$3,hit \psep [\tsb{S} VP]] & shift\\
-            $\lbrack$3,V \psep [\tsb{S} VP]] & reduce(10)\\
+            $\lbrack$3,Vt \psep [\tsb{S} VP]] & reduce(10)\\
             $\lbrack$3,\psep [\tsb{VP} NP] [\tsb{S} VP]] & predict(5)\\
             $\lbrack$4,Daffy \psep [\tsb{VP} NP] [\tsb{S} VP]] & shift\\
             $\lbrack$4,PN \psep [\tsb{VP} NP] [\tsb{S} VP]] & reduce(8)\\
@@ -518,6 +519,493 @@ This analogy is not completely right, however, because such a GLC parser can pre
 But LC parsers are nonetheless very closely related to top-down parsing, as we will see in the next section.
 
 \section{Left-Corner Parsing as Top-Down Parsing} 
+
+Remember from the discussion in Cha.~\ref{cha:ParserOverview} that parsers can be viewed as algorithms for constructing intersection grammars in an incremental fashion.
+From this perspective, a parser is a particular kind of map from grammars to grammars, which is also called a \emph{grammar transform}.
+We will now look at another instance of this idea: an LC parser for grammar $G$ is a top-down parser operating on the \emph{left-corner transform} of $G$ \citep{RosenkrantzLewis70,AhoUllman72}.
+
+Intuitively, the left-corner transform rotates trees by 90 degrees to the right so that the bottom left corner becomes the top left corner (cf.\ Fig.~\ref{fig:LC_TransformTreeComparison}).
+As a result, left corners end up c-commanding their mother as well as their right siblings.
+Thanks to their new structural prominence, left corners are now also conjectured by the top-down parser before the other nodes.
+While this may sound rather confusing, the left corner transform is actually very easy to define.
+%
+\begin{definition}
+    Let $G \is \tuple{N, T, S, R}$ be a CFG\@.
+    The \emph{left-corner transform} of $G$ is the CFG $G^\LeftCorner \is \tuple{N', T, S, R'}$ such that
+    %
+    \[
+        \begin{array}{ll}
+            A \rewrite\ a\ A\mhyphen a               & \text{for all $A \in N$ and $a \in T$}\\
+            A \rewrite\ A\mhyphen B                  & \text{for all $A \in N$ and $B \rewrite \emptystring \in R$}\\ A\mhyphen X \rewrite\ \beta\ A\mhyphen B & \text{for all $A \in N$ and $B \rewrite X \beta \in R$}\\
+            A\mhyphen A \rewrite \emptystring        & \text{for all $A \in N$}
+        \end{array}
+    \]
+\end{definition}
+%
+\begin{examplebox}[Left-Corner Transform of our Example Grammar]
+    Our toy example grammar consists of 
+    \begin{itemize}
+        \item the non-terminals S, NP, VP, Det, N, PN, Vi, and Vt,
+        \item the terminals a, the, car, truck, anvil, Bugs, Daffy, fell over, hit,
+        \item the ten rewrite rules listed below.
+    \end{itemize}
+    %
+    \begin{center}
+        \begin{tabular}{rrcl@{\hspace{2em}}rrcl}
+            1)  & S   & \rewrite & NP VP
+            &
+            6)  & Det & \rewrite & a | the
+            \\
+            2)  & NP  & \rewrite & PN
+            &
+            7)  & N   & \rewrite & car | truck | anvil
+            \\
+            3)  & NP  & \rewrite & Det N
+            &
+            8)  & PN  & \rewrite & Bugs | Daffy
+            \\
+            4)  & VP  & \rewrite & Vi
+            &
+            9)  & Vi  & \rewrite & fell over
+            \\
+            5)  & VP  & \rewrite & Vt NP
+            &
+            10) & Vt  & \rewrite & hit
+            \\
+        \end{tabular}
+    \end{center}
+    %
+    We now apply the left-corner transform.
+    First we have to add a rule of the form $A \rewrite a A\mhyphen a$ for all $A \in N$ and $a \in T$.
+    Even with our small toy grammar that is a lot of rules.
+    %
+    \begin{center}
+        \begin{tabular}{rcl@{\hspace{2em}}rcl}
+            S & \rewrite & a S-a
+            &
+            S & \rewrite & the S-the
+            \\
+            S & \rewrite & car S-car
+            &
+            S & \rewrite & truck S-truck
+            \\
+            S & \rewrite & anvil S-anvil
+            &
+            S & \rewrite & Bugs S-Bugs
+            \\
+            S & \rewrite & Daffy S-Daffy
+            &
+            S & \rewrite & fell\_over S-fell\_over
+            \\
+            S & \rewrite & hit S-hit
+        \end{tabular}
+
+        \begin{tabular}{rcl@{\hspace{2em}}rcl}
+            NP & \rewrite & a NP-a
+            &
+            NP & \rewrite & the NP-the
+            \\
+            NP & \rewrite & car NP-car
+            &
+            NP & \rewrite & truck NP-truck
+            \\
+            NP & \rewrite & anvil NP-anvil
+            &
+            NP & \rewrite & Bugs NP-Bugs
+            \\
+            NP & \rewrite & Daffy NP-Daffy
+            &
+            NP & \rewrite & fell\_over NP-fell\_over
+            \\
+            NP & \rewrite & hit NP-hit
+        \end{tabular}
+
+        \begin{tabular}{rcl@{\hspace{2em}}rcl}
+            VP & \rewrite & a VP-a
+            &
+            VP & \rewrite & the VP-the
+            \\
+            VP & \rewrite & car VP-car
+            &
+            VP & \rewrite & truck VP-truck
+            \\
+            VP & \rewrite & anvil VP-anvil
+            &
+            VP & \rewrite & Bugs VP-Bugs
+            \\
+            VP & \rewrite & Daffy VP-Daffy
+            &
+            VP & \rewrite & fell\_over VP-fell\_over
+            \\
+            VP & \rewrite & hit VP-hit
+        \end{tabular}
+
+        \begin{tabular}{rcl@{\hspace{2em}}rcl}
+            Det & \rewrite & a Det-a
+            &
+            Det & \rewrite & the Det-the
+            \\
+            Det & \rewrite & car Det-car
+            &
+            Det & \rewrite & truck Det-truck
+            \\
+            Det & \rewrite & anvil Det-anvil
+            &
+            Det & \rewrite & Bugs Det-Bugs
+            \\
+            Det & \rewrite & Daffy Det-Daffy
+            &
+            Det & \rewrite & fell\_over Det-fell\_over
+            \\
+            Det & \rewrite & hit Det-hit
+        \end{tabular}
+
+        \begin{tabular}{rcl@{\hspace{2em}}rcl}
+            N & \rewrite & a N-a
+            &
+            N & \rewrite & the N-the
+            \\
+            N & \rewrite & car N-car
+            &
+            N & \rewrite & truck N-truck
+            \\
+            N & \rewrite & anvil N-anvil
+            &
+            N & \rewrite & Bugs N-Bugs
+            \\
+            N & \rewrite & Daffy N-Daffy
+            &
+            N & \rewrite & fell\_over N-fell\_over
+            \\
+            N & \rewrite & hit N-hit
+        \end{tabular}
+
+        \begin{tabular}{rcl@{\hspace{2em}}rcl}
+            PN & \rewrite & a PN-a
+            &
+            PN & \rewrite & the PN-the
+            \\
+            PN & \rewrite & car PN-car
+            &
+            PN & \rewrite & truck PN-truck
+            \\
+            PN & \rewrite & anvil PN-anvil
+            &
+            PN & \rewrite & Bugs PN-Bugs
+            \\
+            PN & \rewrite & Daffy PN-Daffy
+            &
+            PN & \rewrite & fell\_over PN-fell\_over
+            \\
+            PN & \rewrite & hit PN-hit
+        \end{tabular}
+
+        \begin{tabular}{rcl@{\hspace{2em}}rcl}
+            Vi & \rewrite & a Vi-a
+            &
+            Vi & \rewrite & the Vi-the
+            \\
+            Vi & \rewrite & car Vi-car
+            &
+            Vi & \rewrite & truck Vi-truck
+            \\
+            Vi & \rewrite & anvil Vi-anvil
+            &
+            Vi & \rewrite & Bugs Vi-Bugs
+            \\
+            Vi & \rewrite & Daffy Vi-Daffy
+            &
+            Vi & \rewrite & fell\_over Vi-fell\_over
+            \\
+            Vi & \rewrite & hit Vi-hit
+        \end{tabular}
+
+        \begin{tabular}{rcl@{\hspace{2em}}rcl}
+            Vt & \rewrite & a Vt-a
+            &
+            Vt & \rewrite & the Vt-the
+            \\
+            Vt & \rewrite & car Vt-car
+            &
+            Vt & \rewrite & truck Vt-truck
+            \\
+            Vt & \rewrite & anvil Vt-anvil
+            &
+            Vt & \rewrite & Bugs Vt-Bugs
+            \\
+            Vt & \rewrite & Daffy Vt-Daffy
+            &
+            Vt & \rewrite & fell\_over Vt-fell\_over
+            \\
+            Vt & \rewrite & hit Vt-hit
+        \end{tabular}
+    \end{center}
+    %
+    Our grammar contains no rules that rewrite a non-terminal as the empty string, so we can skip the second step of the transform.
+    Next we have to add rules of the form $A\mhyphen X \rewrite \beta\ A\mhyphen B$ for all non-terminals $A$ and every $B$ such that $B \rewrite X\ \beta$.
+    We only list the rewrite rules for S, but exactly the same rules exist for every other non-terminal.
+    %
+    \begin{center}
+        \begin{tabular}{rcl@{\hspace{2em}}rcl}
+            S-NP & \rewrite & VP S-S
+            &
+            S-a & \rewrite & S-Det
+            \\
+            S-PN & \rewrite & S-NP
+            &
+            S-the & \rewrite & S-Det
+            \\
+            S-Det & \rewrite & N S-NP
+            &
+            S-car & \rewrite & S-N
+            \\
+            S-Vi & \rewrite & S-VP
+            &
+            S-truck & \rewrite & S-N
+            \\
+            S-Vt & \rewrite & NP S-VP
+            &
+            S-anvil & \rewrite & S-N
+            \\
+            & & &
+            S-Bugs & \rewrite & S-PN
+            \\
+            & & &
+            S-Daffy & \rewrite & S-PN
+            \\
+            & & &
+            S-fell\_over & \rewrite & S-Vi
+            \\
+            & & &
+            S-hit & \rewrite & S-Vt
+        \end{tabular}
+    \end{center}
+    %
+    Finally, we add $A\mhyphen A \rewrite \emptystring$ for all non-terminals $A$ of the original grammar.
+    %
+    \begin{center}
+        \begin{tabular}{rcl@{\hspace{2em}}rcl}
+            S-S & \rewrite & \emptystring
+            &
+            Det-Det & \rewrite & \emptystring
+            \\
+            NP-NP & \rewrite & \emptystring
+            &
+            N-N & \rewrite & \emptystring
+            \\
+            VP-VP & \rewrite & \emptystring
+            &
+            PN-PN & \rewrite & \emptystring
+            \\
+            & & &
+            Vi-Vi & \rewrite & \emptystring
+            \\
+            & & &
+            Vt-Vt & \rewrite & \emptystring
+        \end{tabular}
+    \end{center}
+    %
+    This is an enormous grammar with a confusing arrangements of rules, which is furthermore exacerbated by the unfortunate fact that most of these rules cannot occur in a well-formed derivation.
+    Fortunately there are algorithms for pruning away such useless rules \citep[cf.]{GruneJacobs08}.
+    %fixme: add page numbers
+    The compacted grammar is still much bigger than the original though.
+    %
+    %fixme: pruned grammar here
+    %
+\end{examplebox}
+
+Even an extended look at the transformed grammar in the example above does not readily reveal how it relates top-down parsing to LC parsing.
+However, things become clearer when one compares which tree the original grammar generates for \emph{The anvil hit Daffy} to the tree licensed by the transformed grammar.
+Both trees are shown in Fig.~\ref{fig:LC_TransformTreeComparison}.
+%
+\begin{figure}[tbph]
+\centering
+    \begin{tikzpicture}
+        \Tree
+            [.S
+                [.NP
+                    [.Det the ]
+                    [.N anvil ]
+                ]
+                [.VP
+                    [.Vt hit ]
+                    [.NP
+                        [.PN
+                            Daffy
+                        ]
+                    ]
+                ]
+            ]
+    \end{tikzpicture}
+    %
+    \hspace{2em}
+    %
+    \begin{tikzpicture}[
+        level 1/.style = { sibling distance = -4em },
+        level 3/.style = { sibling distance = -2em },
+        level 5/.style = { sibling distance = -4em }
+        ]
+        \Tree
+            [.S
+                the
+                [.S-the
+                    [.S-Det
+                        [.N
+                            anvil
+                            [.N-anvil
+                                [.N-N
+                                    $\emptystring$
+                                ]
+                            ]
+                        ]
+                        [.S-NP
+                            [.VP
+                                hit
+                                [.VP-hit
+                                    [.VP-Vt
+                                        [.NP
+                                            Daffy
+                                            [.NP-Daffy
+                                                [.NP-PN
+                                                    [.NP-NP
+                                                        $\emptystring$
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                        [.VP-VP
+                                            $\emptystring$
+                                        ]
+                                    ]
+                                ]
+                            ]
+                            [.S-S
+                                $\emptystring$
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+    \end{tikzpicture}
+\caption{Parse tree for \emph{The anvil hit Daffy} with original and transformed grammar}
+\label{fig:LC_TransformTreeComparison}
+\end{figure}
+%
+When the transformed tree is traversed in the fashion of a recursive descent parser, it closely lines up with the LC parse table for \emph{the anvil hit Daffy} in example~\ref{ex:LC_ParseTable}.
+Figure~\ref{fig:LC_AnnotatedTransformTree} depicts this in full detail.
+%
+\begin{figure}[tbph]
+\centering
+    \begin{tikzpicture}[
+        level 1/.style = { sibling distance = -4em },
+        level 3/.style = { sibling distance = 2em },
+        level 4/.style = { sibling distance = 4em },
+        level 5/.style = { sibling distance = -4em }
+        ]
+        \Tree
+            [.\node(0){S};
+                \node(00){the};
+                [.\node(01){S-the};
+                    [.\node(010){S-Det};
+                        [.\node(0100){N};
+                            \node(01000){anvil};
+                            [.\node(01001){N-anvil};
+                                [.\node(010010){N-N};
+                                    \node(0100100){$\emptystring$};
+                                ]
+                            ]
+                        ]
+                        [.\node(0101){S-NP};
+                            [.\node(01010){VP};
+                                \node(010100){hit};
+                                [.\node(010101){VP-hit};
+                                    [.\node(0101010){VP-Vt};
+                                        [.\node(01010100){NP};
+                                            \node(010101000){Daffy};
+                                            [.\node(010101001){NP-Daffy};
+                                                [.\node(0101010010){NP-PN};
+                                                    [.\node(01010100100){NP-NP};
+                                                        \node(010101001000){$\emptystring$};
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                        [.\node(01010101){VP-VP};
+                                            \node(010101010){$\emptystring$};
+                                        ]
+                                    ]
+                                ]
+                            ]
+                            [.\node(01011){S-S};
+                                \node(010110){$\emptystring$};
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+
+        % labels
+        \foreach \Node/\Direction/\Label in {%
+                                            0/left/axiom,
+                                            01/right/shift,
+                                            010/right/reduce(6),
+                                            0100/left/predict(3),
+                                            01001/above right/shift,
+                                            010010/left/reduce(7),
+                                            0100100/left/scan,
+                                            0101/right/complete,
+                                            01010/right/predict(1),
+                                            010101/right/shift,
+                                            0101010/right/reduce(10),
+                                            01010100/left/predict(5),
+                                            010101001/below left/shift,
+                                            0101010010/right/reduce(8),
+                                            01010100100/right/reduce(2),
+                                            010101001000/right/scan,
+                                            01010101/right/complete,
+                                            010101010/right/scan,
+                                            01011/right/complete
+                                            }
+            {
+            \node (lab-\Node) [\Direction=2em of \Node, text = {blue!75}] {\Label};
+            \draw[blue!75,->] (lab-\Node) to (\Node);
+            }
+    \end{tikzpicture}
+\caption{Recursive descent traversal of the parse tree closely mirrors the steps of an LC parser}
+\label{fig:LC_AnnotatedTransformTree}
+\end{figure}
+%
+Closer analysis of the tree also reveals that the names of the non-terminals were not chosen arbitrarily.
+Instead, they follow a simple pattern were the hyphen serves a similar function as the dot in our items: recognized material is to the right of the hyphen, conjectured material to its left (note that this is the exact reverse of the order used in our parse items).
+The node S-NP, for instance, encodes the fact that we are conjecturing an S and have successfully identified its NP subtree.
+A non-terminal $X$ without hyphen is simply shorthand for $X\mhyphen$.
+That is to say, it represents the fact a node has been conjectured but no part of its subtree has been recognized yet.
+%
+\begin{exercise}
+    Now that you know how to interpret the non-terminal symbols, go back to the definition of the left-corner transform and provide an intuitive explanation for each one of the four rule templates.
+\end{exercise}
+
+Decomposing LC parsing into top-down parsing with a left corner transform may seem like little more than a technical trick --- a very impressive one, admittedly, yet merely a trick.
+But just like intersection parsing, this abstracted perspective has a lot to offer.
+On a practicla level, any kind of algorithmic improvements for recursive descent parsers can be carried over to LC parsers via the left-corner transform, which is a lot simpler than adapting the top-down techniques to LC parsing (for a very different application see \citealt{Johnson96}).
+Quite generally top-down parsers are much more versatile and better understood than LC parsers.
+For example, top-down parsers have been extended greatly beyond the bounds of CFGs whereas no simple yet general notion of LC parsing exists for formaslisms that are more powerful than CFGs.
+Recent theorems show, however, that these formalisms still have a context-free backbone and thus it should be possible to parse them left-corner style by applying the left-corner transform to said context-free backbone.
+These and many other insights would be much harder to obtain without the left-corner transform.
+
+The left-corner transform also has the advantage of being entirely non-destructive: one can always retrieve the original tree structure from the transformed parse tree.
+Any algorithm that can construct the original phrase structure tree from the left corner parse table can be extended to work over the left-corner transformed parse trees instead since the latter contains all the information of the former.
+The structural changes to the grammar are merely a result of shifting parts of the parser directly into the grammar, we are not forced into granting these structures any kind of cognitive reality at the level of grammatical description.
+
+\begin{exercise}
+    Define a shift-reduce transform such that a top-down parser operating over the shift-reduce transform of grammar $G$ will explore the nodes in the order that corresponds to a shift-reduce parse table for any given input sentence that can be generated by $G$.
+\end{exercise}
+%
+\begin{exercise}
+    Given that we can decompose a variety of parsers into a recursive descent parser coupled with a grammar transform, what are we to make of claims that the human parser must follow a specific strategy given the experimental evidence?
+    Can the two more easily be reconciled under a view where grammar and parser are distinct cognitive objects, or one where the grammar is an abstraction of the parser (cf.\ the discussion in Chapter~\ref{cha:BigPicture})?
+\end{exercise}
+
 
 \section{Psycholinguistic Adequacy}
 \label{sec:LeftCorner_Evaluation}
