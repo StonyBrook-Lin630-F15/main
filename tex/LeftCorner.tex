@@ -987,7 +987,7 @@ That is to say, it represents the fact a node has been conjectured but no part o
 
 Decomposing LC parsing into top-down parsing with a left corner transform may seem like little more than a technical trick --- a very impressive one, admittedly, yet merely a trick.
 But just like intersection parsing, this abstracted perspective has a lot to offer.
-On a practicla level, any kind of algorithmic improvements for recursive descent parsers can be carried over to LC parsers via the left-corner transform, which is a lot simpler than adapting the top-down techniques to LC parsing (for a very different application see \citealt{Johnson96}).
+On a practical level, any kind of algorithmic improvements for recursive descent parsers can be carried over to LC parsers via the left-corner transform, which is a lot simpler than adapting the top-down techniques to LC parsing (for a very different application see \citealt{Johnson96}).
 Quite generally top-down parsers are much more versatile and better understood than LC parsers.
 For example, top-down parsers have been extended greatly beyond the bounds of CFGs whereas no simple yet general notion of LC parsing exists for formaslisms that are more powerful than CFGs.
 Recent theorems show, however, that these formalisms still have a context-free backbone and thus it should be possible to parse them left-corner style by applying the left-corner transform to said context-free backbone.
@@ -1010,20 +1010,545 @@ The structural changes to the grammar are merely a result of shifting parts of t
 \section{Psycholinguistic Adequacy}
 \label{sec:LeftCorner_Evaluation}
 
-\begin{exercise}
-    Show that just like top-down and bottom-up parsers, left-corner parsers struggle with garden path sentences.
-\end{exercise}
+\subsection{Garden Paths}
+Since LC parsers combine top-down and bottom-up techinques of structure-building --- both of which struggled with garden path sentences --- one would also expect the LC parser to predict that garden path sentences are hard.
+This is indeed the case, as can be seen in the parse history in Fig.~\ref{fig:LC_GardenPath}.
+Note that our toy grammar for garden paths has no lexical ambiguity, so the predictions are independent of whether the LC parser uses top-down filtering.
+It is also instructive to compare this parse history to the ones for the recursive descent parser and the shift reduce parser on pages~\pageref{fig:TopDownEval_ParseHistory} and~\pageref{fig:BottomUp_ParseHistory}, respectively.
+With the same preferences for rewrite rules, the LC parser finds the right parse after three failures whereas recursive descent has at least nine failures and shift reduce still five. 
+%
+\begin{figure}[tbp]
+\hspace{-8em}
+\footnotesize
+    \begin{tikzpicture}[
+        level 1+/.style = { level distance = 2em },
+        level 11/.style = { sibling distance = -12em }
+        ]
+        \Tree
+            [.{[0,\psep]}
+                [.{[1,the \psep]}
+                    [.{[1,Det \psep]}
+                        [.{[1, \psep [\tsb{NP} N]]}
+                            [.{[2, horse \psep [\tsb{NP} N]]}
+                                [.{[2, N \psep [\tsb{NP} N]]}
+                                    [.{[2, \psep [\tsb{NP} ]]}
+                                    [.{[2, NP \psep]}
+                                        [.{[2,\psep [\tsb{S} VP]]}
+                                            [.{[3, raced \psep [\tsb{S} VP]]}
+                                                [.{[3, V \psep [\tsb{S} VP]]}
+                                                    [.{[3, VP \psep [\tsb{S} VP]]}
+                                                        [.{[3, \psep [\tsb{S} ]]}
+                                                            {[3, S \psep]}
+                                                        ]
+                                                    ]
+                                                    [.{[3, \psep [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                        [.{[4, past \psep [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                            [.{[4, P \psep [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                [.{[4, \psep [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                    [.{[5, the \psep [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                        [.{[5, Det \psep [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                            [.{[5, \psep [\tsb{NP} N] [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                [.{[6, barn \psep [\tsb{NP} N] [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                    [.{[6, N \psep [\tsb{NP} N] [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                        [.{[6, \psep [\tsb{NP} ] [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                        [.{[6, NP \psep [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                        [.{[6, \psep [\tsb{PP} ] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                        [.{[6, PP \psep [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                        [.{[6, \psep [\tsb{VP} ] [\tsb{S} VP]]}
+                                                                                        [.{[6, VP \psep [\tsb{S} VP]]}
+                                                                                        [.{[6, \psep [\tsb{S} ]]}
+                                                                                            {[6, S \psep ]}
+                                                                                        ]
+                                                                                        ]
+                                                                                        ]
+                                                                                        ]
+                                                                                        ]
+                                                                                        ]
+                                                                                        ]
+                                                                                    ]
+                                                                                ]
+                                                                            ]
+                                                                            [.{[5, \psep [\tsb{NP} N VP\tsb{rel}] [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                [.{[6, barn \psep [\tsb{NP} N VP\tsb{rel}] [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                    [.{[6, N \psep [\tsb{NP} N VP\tsb{rel}] [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                    [.{[6, \psep [\tsb{NP} VP\tsb{rel}] [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                    [.{[7, fell \psep [\tsb{NP} VP\tsb{rel}] [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                    [.{[7, V \psep [\tsb{NP} VP\tsb{rel}] [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                    [.{[7, VP \psep [\tsb{NP} VP\tsb{rel}] [\tsb{PP} NP] [\tsb{VP} PP] [\tsb{S} VP]]}
+                                                                                    ]
+                                                                                    ]
+                                                                                    ]
+                                                                                    ]
+                                                                                    ]
+                                                                                ]
+                                                                            ]
+                                                                        ]
+                                                                    ]
+                                                                ]
+                                                            ]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                        [.{[1, \psep [\tsb{NP} N VP\tsb{rel}]]}
+                            [.{[2, horse \psep [\tsb{NP} N VP\tsb{rel}]]}
+                                [.{[2, N \psep [\tsb{NP} N VP\tsb{rel}]]}
+                                [.{[2, \psep [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[3, raced \psep [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[3, V\tsb{rel} \psep [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[3, \psep [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[4, past \psep [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[4, P \psep [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[4, \psep [\tsb{PP} NP] [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[5, the \psep [\tsb{PP} NP] [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[5, Det \psep [\tsb{PP} NP] [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[5, \psep [\tsb{NP} N] [\tsb{PP} NP] [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[6, barn \psep [\tsb{NP} N] [\tsb{PP} NP] [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[6, N \psep [\tsb{NP} N] [\tsb{PP} NP] [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[6, \psep [\tsb{NP}]  [\tsb{PP} NP] [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[6, NP \psep [\tsb{PP} NP] [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[6, \psep [\tsb{PP} ] [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[6, PP \psep [\tsb{VP\tsb{rel}} PP] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[6, \psep [\tsb{VP\tsb{rel}} ] [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[6, VP\tsb{rel} \psep [\tsb{NP} VP\tsb{rel}]]}
+                                [.{[6, \psep [\tsb{NP} ]]}
+                                [.{[6, NP \psep ]}
+                                [.{[6, \psep [\tsb{S} VP]]}
+                                [.{[7, fell \psep [\tsb{S} VP]]}
+                                [.{[7, V \psep [\tsb{S} VP]]}
+                                [.{[7, VP \psep [\tsb{S} VP]]}
+                                [.{[7, \psep [\tsb{S} ]]}
+                                [.{[7, S \psep]}
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+    \end{tikzpicture}
+\caption{Parse history for LC parse of \emph{the horse raced past the barn fell}; the parser moves through the history in a recursive descent fashion}
+\label{fig:LC_GardenPath}
+\end{figure}
 
 \begin{exercise}
-    Recall the two structures that were proposed for \emph{John's father's car's exhaust pipe disappeared} in exercises~\ref{ex:BottomUp_LeftEmbedding} and~\ref{ex:BottomUp_RightEmbedding}.
-    Write down the left-corner parse tables for both structures.
-    Based on these parse tables, annotate the trees with subscripts and superscripts in the usual fashion.
-    Determine the payload as well as MaxTen and MaxSum.
-    How does the left-corner parser fare in comparison to the recursive descent and shift reduce parsers?
+    Explain how the LC parser avoids some of the failed parses that are entertained by the recursive descent parser or the shift reduce parser.
 \end{exercise}
 
+\subsection{Left Recursion and Left Embeddings}
+
+Left recursion was a problem for top-down parsing because it can prevent the parser from terminating (if the parser has to find all possible parses rather than just one).
+This is not an issue with the LC parser thanks to the bottom-up restrictions on the prediction steps.
+%
+\begin{examplebox}[LC Parse of Nested Possessive DPs]
+    The table below shows a successful parse for \emph{John's father's car's exhaust pipe disappeared} with a grammar that analyzes possessive DPs with the rules DP \rewrite\ DP D$'$ and D$'$ \rewrite\ Poss NP\@.
+    %
+    \begin{center}
+        \begin{tabular}{r|l}
+            \textbf{parse item} & \textbf{inference rule}\\
+            $\lbrack$0, \psep]                                              & axiom\\
+            $\lbrack$1, John \psep]                                         & shift\\
+            $\lbrack$1, PN \psep]                                           & reduce\\
+            $\lbrack$1, DP \psep]                                           & reduce\\
+            $\lbrack$1, \psep [\tsb{DP} D$'$]]                              & predict\\
+            $\lbrack$2, 's \psep [\tsb{DP} D$'$]]                           & shift\\
+            $\lbrack$2, Poss \psep [\tsb{DP} D$'$]]                         & reduce\\
+            $\lbrack$2, \psep [\tsb{D$'$} NP] [\tsb{DP} D$'$]]              & predict\\
+            $\lbrack$3, father \psep [\tsb{D$'$} NP] [\tsb{DP} D$'$]]       & shift\\
+            $\lbrack$3, N \psep [\tsb{D$'$} NP] [\tsb{DP} D$'$]]            & reduce\\
+            $\lbrack$3, NP \psep [\tsb{D$'$} NP] [\tsb{DP} D$'$]]           & reduce\\
+            $\lbrack$3, \psep [\tsb{D$'$} ] [\tsb{DP} D$'$]]                & scan\\
+            $\lbrack$3, D$'$ \psep [\tsb{DP} D$'$]]                         & complete\\
+            $\lbrack$3, \psep [\tsb{DP} ]]                                  & scan\\
+            $\lbrack$3, DP \psep]                                           & complete\\
+            $\lbrack$3, \psep [\tsb{DP} D$'$]]                              & predict\\
+            $\lbrack$4, 's \psep [\tsb{DP} D$'$]]                           & shift\\
+            $\lbrack$4, Poss \psep [\tsb{DP} D$'$]]                         & reduce\\
+            $\lbrack$4, \psep [\tsb{D$'$} NP] [\tsb{DP} D$'$]]              & predict\\
+            $\lbrack$5, car \psep [\tsb{D$'$} NP] [\tsb{DP} D$'$]]          & shift\\
+            $\lbrack$5, N \psep [\tsb{D$'$} NP] [\tsb{DP} D$'$]]            & reduce\\
+            $\lbrack$5, NP \psep [\tsb{D$'$} NP] [\tsb{DP} D$'$]]           & reduce\\
+            $\lbrack$5, \psep [\tsb{D$'$} ] [\tsb{DP} D$'$]]                & scan\\
+            $\lbrack$5, D$'$ \psep [\tsb{DP} D$'$]]                         & complete\\
+            $\lbrack$5, \psep [\tsb{DP} ]]                                  & scan\\
+            $\lbrack$5, DP \psep]                                           & complete\\
+            $\lbrack$6, 's \psep [\tsb{DP} D$'$]]                           & shift\\
+            $\lbrack$6, Poss \psep [\tsb{DP} D$'$]]                         & reduce\\
+            $\lbrack$6, \psep [\tsb{D$'$} NP] [\tsb{DP} D$'$]]              & predict\\
+            $\lbrack$7, exhaust pipe \psep [\tsb{D$'$} NP] [\tsb{DP} D$'$]] & shift\\
+            $\lbrack$7, N \psep [\tsb{D$'$} NP] [\tsb{DP} D$'$]]            & reduce\\
+            $\lbrack$7, NP \psep [\tsb{D$'$} NP] [\tsb{DP} D$'$]]           & reduce\\
+            $\lbrack$7, \psep [\tsb{D$'$} ] [\tsb{DP} D$'$]]                & scan\\
+            $\lbrack$7, D$'$ \psep [\tsb{DP} D$'$]]                         & complete\\
+            $\lbrack$7, \psep [\tsb{DP} ]]                                  & scan\\
+            $\lbrack$7, DP \psep]                                           & complete\\
+            $\lbrack$7, \psep [\tsb{S} VP]]                                 & predict\\
+            $\lbrack$8, disappeared \psep [\tsb{S} VP]]                     & shift\\
+            $\lbrack$8, VP \psep [\tsb{S} VP]]                              & reduce\\
+            $\lbrack$8, \psep [\tsb{S} ]]                                   & scan\\
+            $\lbrack$9, S \psep]                                            & complete
+        \end{tabular}
+    \end{center}
+    %
+    Pay close attention to how the parser constantly goes through the same sequence of inference rules for each DP layer: a possessive DP is constructed and discharged via the left-corner prediction of another DP\@.
+\end{examplebox}
+%
+Since the LC parser completely finishes a possessive DP before starting the next higher one, it behaves similar to the shift reduce parser for left embeddings, with memory load remaining mostly unaffected by the number of embeddings.
+This can also be seen in the annotated parse tree, which may have a high payload but maximum tenure is always $6$ irrespective of the number of embedded DPs.
+%
+\begin{center}
+    \footnotesize
+    \begin{tikzpicture}
+        \Tree
+            [.\IBLab{S}{21}{24}
+                [.\IBLab{DP}{15}{21}
+                    [.\IBLab{DP}{9}{15}
+                        [.\IBLab{DP}{3}{9}
+                            [.\Lab{PN}{2}{3}
+                                \Lab{John}{1}{2}
+                            ]
+                            [.\IBLab{D$'$}{3}{9}
+                                [.\Lab{Poss}{5}{6}
+                                    \Lab{'s}{4}{5}
+                                ]
+                                [.\IBLab{NP}{6}{9}
+                                    [.\Lab{N}{8}{9}
+                                        \Lab{father}{7}{8}
+                                    ]
+                                ]
+                            ]
+                        ]
+                        [.\IBLab{D$'$}{9}{15}
+                            [.\Lab{Poss}{11}{12}
+                                \Lab{'s}{10}{11}
+                            ]
+                            [.\IBLab{NP}{12}{15}
+                                [.\Lab{N}{14}{15}
+                                    \Lab{car}{13}{14}
+                                ]
+                            ]
+                        ]
+                    ]
+                    [.\IBLab{D$'$}{15}{21}
+                        [.\Lab{Poss}{17}{18}
+                            \Lab{'s}{16}{17}
+                        ]
+                        [.\IBLab{NP}{18}{21}
+                            [.\Lab{N}{20}{21}
+                                \Lab{exhaust pipe}{19}{20}
+                            ]
+                        ]
+                    ]
+                ]
+                [.\IBLab{VP}{21}{24}
+                    [.\Lab{V}{23}{24}
+                        \Lab{disappeared}{22}{23}
+                    ]
+                ]
+            ]
+    \end{tikzpicture}
+\end{center}
+
+\subsection{Center Embedding and Right Embedding}
+
+The behavior of the LC parser for center embedding and right embedding is not as easy to evaluate as left embedding.
+Let us look at right embedding first.
+Given what we have said about LC parsing so far, it should not be too hard to see that memory load increases with right embedding.
+That's because a node is introduced at the same time as its right daughters but cannot be completed until they are.
+So the bigger the right daughters of a node, the higher its tenure.
+%
+\begin{examplebox}[Run of standard LC parser over right embedding sentence]
+    \phantom{a}
+    \begin{center}
+        \footnotesize
+        \begin{tikzpicture}[
+            level 1+/.style = { level distance = 2.5em },
+            level 2/.style = { sibling distance = -.75em },
+            level 3/.style = { sibling distance = -1em },
+            level 4/.style = { sibling distance = -1em },
+            level 5/.style = { sibling distance = -1em },
+            level 6/.style = { sibling distance = -1em }
+            ]
+            \Tree
+                [.\IBLab{S}{4}{37}
+                    [.\Lab{NP}{3}{4}
+                        [.\Lab{N}{2}{3}
+                            \Lab{I}{1}{2}
+                        ]
+                    ]
+                    [.\IBLab{VP}{4}{37}
+                        [.\Lab{V}{6}{7}
+                            \Lab{bought}{5}{6}
+                        ]
+                        [.\IBLab{NP}{7}{37}
+                            [.\Lab{Det}{9}{10}
+                                \Lab{the}{8}{9}
+                            ]
+                            [.\IBLab{CP}{10}{37}
+                                [.\Lab{N}{12}{13}
+                                    \Lab{cheese}{11}{12}
+                                ]
+                                [.\IBLab{C}{13}{16}
+                                    \Lab{that}{14}{15}
+                                ]
+                                [.\IBLab{S}{13}{37}
+                                    [.\IBLab{NP}{19}{22}
+                                        [.\Lab{Det}{18}{19}
+                                            \Lab{the}{17}{18}
+                                        ]
+                                        [.\IBLab{N}{19}{22}
+                                            \Lab{mouse}{20}{21}
+                                        ]
+                                    ]
+                                    [.\IBLab{VP}{22}{25}
+                                        [.\Lab{V}{24}{25}
+                                            \Lab{wanted}{23}{24}
+                                        ]
+                                    ]
+                                    [.\IBLab{CP}{22}{37}
+                                        [.\Lab{C}{27}{28}
+                                            \Lab{that}{26}{27}
+                                        ]
+                                        [.\IBLab{S}{28}{37}
+                                            [.\IBLab{NP}{31}{34}
+                                                [.\Lab{Det}{30}{31}
+                                                    \Lab{the}{29}{30}
+                                                ]
+                                                [.\IBLab{N}{31}{34}
+                                                    \Lab{cat}{32}{33}
+                                                ]
+                                            ]
+                                            [.\IBLab{VP}{34}{37}
+                                                [.\Lab{V}{36}{37}
+                                                    \Lab{ate}{35}{36}
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+        \end{tikzpicture}
+    \end{center}
+
+    The payload of right embedding is enormous with an LC parser, and tenure also increases with every level of embedding.
+\end{examplebox}
+%
+The problem is that the LC parser is extremely conservative in how it discharges hypothesis.
+A node with right daughters $d_1, \ldots, d_n$ is held in memory until each $d_i$ has been recognized bottom-up.
+This contrasts quite sharply with the prediction step, where the parser considers just the leftmost daughter $d_0$ sufficient evidence for positing a hypothesis.
+Suppose, on the other hand, that the LC parser could also use hypothesis in the scan steps so that a node can be discharged as soon as all its daughters have been predicted.
+%
+\begin{prooftree}
+    \AxiomC{$[i, \alpha \psep [_{N_1} \delta_1] \cdots [_{N_k} \delta_k] [_M\ \gamma ]\ \beta]$}
+    \LeftLabel{\textbf{Eager Scan}\qquad}
+    \RightLabel{$\gamma \is N_1 \cdots N_k$}
+    \UnaryInfC{$[i, \alpha \psep [_{N_1} \delta_1] \cdots [_{N_k} \delta_k] \ \beta]$}
+\end{prooftree}
+%
+\citet{Resnik92} studies this type of LC parser in detail and calls it \emph{arc-eager} (the intuition being that if there are conjectured nodes than can be linked by an arc, the parser establishes that arc immediately).
+\citeauthor{Resnik92} concludes that an arc-eager LC parser predicts both left embedding and right embedding due to their small memory load, whereas center embedding is correctly predicted to be much harder.
+We can confirm this claim using a modified parse annotation scheme to represent the arc-eager LC parse.
+%
+\begin{examplebox}[Run of arc-eager LC parser over right embedding sentence]
+    \phantom{a}
+    \begin{center}
+        \footnotesize
+        \begin{tikzpicture}[
+            level 1+/.style = { level distance = 2.5em },
+            level 2/.style = { sibling distance = -.75em },
+            level 3/.style = { sibling distance = -1em },
+            level 4/.style = { sibling distance = -1em },
+            level 5/.style = { sibling distance = -1em },
+            level 6/.style = { sibling distance = -1em }
+            ]
+            \Tree
+                [.\Lab{S}{4}{5}
+                    [.\Lab{NP}{3}{4}
+                        [.\Lab{N}{2}{3}
+                            \Lab{I}{1}{2}
+                        ]
+                    ]
+                    [.\IBLab{VP}{4}{9}
+                        [.\Lab{V}{7}{8}
+                            \Lab{bought}{6}{7}
+                        ]
+                        [.\IBLab{NP}{8}{13}
+                            [.\Lab{Det}{11}{12}
+                                \Lab{the}{10}{11}
+                            ]
+                            [.\IBLab{CP}{12}{17}
+                                [.\Lab{N}{15}{16}
+                                    \Lab{cheese}{14}{15}
+                                ]
+                                [.\IBLab{C}{16}{20}
+                                    \Lab{that}{18}{19}
+                                ]
+                                [.\IBLab{S}{16}{28}
+                                    [.\IBLab{NP}{23}{24}
+                                        [.\Lab{Det}{22}{23}
+                                            \Lab{the}{21}{22}
+                                        ]
+                                        [.\IBLab{N}{23}{27}
+                                            \Lab{mouse}{25}{26}
+                                        ]
+                                    ]
+                                    [.\IBLab{VP}{27}{32}
+                                        [.\Lab{V}{30}{31}
+                                            \Lab{wanted}{29}{30}
+                                        ]
+                                    ]
+                                    [.\IBLab{CP}{27}{36}
+                                        [.\Lab{C}{34}{35}
+                                            \Lab{that}{33}{34}
+                                        ]
+                                        [.\IBLab{S}{35}{37}
+                                            [.\IBLab{NP}{31}{39}
+                                                [.\Lab{Det}{37}{38}
+                                                    \Lab{the}{36}{37}
+                                                ]
+                                                [.\IBLab{N}{38}{42}
+                                                    \Lab{cat}{40}{41}
+                                                ]
+                                            ]
+                                            [.\IBLab{VP}{43}{37}
+                                                [.\Lab{V}{36}{37}
+                                                    \Lab{ate}{35}{36}
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+        \end{tikzpicture}
+    \end{center}
+
+    The payload of right embedding is enormous with an LC parser, and tenure also increases with every level of embedding.
+\end{examplebox}
+
+
+\begin{examplebox}[Run of shift reduce parser over center embedding sentence]
+    We use the same promotion-style analysis of relative clauses as in Sec.~\ref{sub:TopDownEval_CenterEmbedding}.
+    %
+    \begin{center}
+        \footnotesize
+        \begin{tikzpicture}[
+            level 1+/.style = { level distance = 2.5em },
+            level 1/.style = { sibling distance = -.75em },
+            level 3/.style = { sibling distance = -1em },
+            level 4/.style = { sibling distance = -.5em },
+            level 5/.style = { sibling distance = -3em },
+            level 6/.style = { sibling distance = -1.75em },
+            level 7/.style = { sibling distance = -.5em }
+            ]
+            \Tree
+                [.\Lab{S}{36}{}
+                    [.\IBLab{NP}{3}{36}
+                        [.\Lab{N}{2}{3}
+                            \Lab{I}{1}{2}
+                        ]
+                    ]
+                    [.\Lab{VP}{35}{36}
+                        [.\IBLab{V}{5}{35}
+                            \Lab{bought}{4}{5}
+                        ]
+                        [.\Lab{NP}{34}{35}
+                            [.\IBLab{Det}{7}{34}
+                                \Lab{the}{6}{7}
+                            ]
+                            [.\Lab{CP}{33}{34}
+                                [.\IBLab{N}{9}{33}
+                                    \Lab{cheese}{8}{9}
+                                ]
+                                [.\IBLab{C}{11}{33}
+                                    \Lab{that}{10}{11}
+                                ]
+                                [.\Lab{S}{32}{33}
+                                    [.\IBLab{NP}{28}{32}
+                                        [.\IBLab{Det}{13}{28}
+                                            \Lab{the}{12}{13}
+                                        ]
+                                        [.\Lab{CP}{27}{28}
+                                            [.\IBLab{N}{15}{27}
+                                                \Lab{mouse}{14}{15}
+                                            ]
+                                            [.\IBLab{C}{17}{27}
+                                                \Lab{that}{16}{17}
+                                            ]
+                                            [.\Lab{S}{26}{27}
+                                                [.\IBLab{NP}{22}{26}
+                                                    [.\IBLab{Det}{19}{22}
+                                                        \Lab{the}{18}{19}
+                                                    ]
+                                                    [.\Lab{N}{21}{22}
+                                                        \Lab{cat}{20}{21}
+                                                    ]
+                                                ]
+                                                [.\Lab{VP}{25}{26}
+                                                    [.\Lab{V}{24}{25}
+                                                        \Lab{ate}{23}{24}
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                    [.\Lab{VP}{31}{32}
+                                        [.\Lab{V}{30}{31}
+                                            \Lab{wanted}{29}{30}
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+        \end{tikzpicture}
+    \end{center}
+    %
+    The parse shows a payload of 11, just as in the case of the recursive descent parser. 
+    The maximum tenure is 33, which is a lot more than the recursive descent parser's 17.
+    The sum tenure is 184 (over three times the recursive descent parser's 55).
+\end{examplebox}
+
 \begin{exercise}
-    Are merely local syntactic coherence effects expected with a left-corner parser?
+    Are merely local syntactic coherence effects expected with a standard LC parser?
+    What about GLC parsers or variants with top-down filtering?
 \end{exercise}
 
 \bibliographystyle{./bib/linquiry3}
