@@ -518,8 +518,16 @@ A top-down parser is similar to a GLC parser where the star is always at the beg
 This analogy is not completely right, however, because such a GLC parser can predict any rule at any given point, whereas the top-down parser must make predictions that are licit rewritings of non-terminal symbols in the parse items.
 But LC parsers are nonetheless very closely related to top-down parsing, as we will see in the next section.
 
-\section{Left-Corner Parsing as Top-Down Parsing} 
+\paragraph{An important terminological remark} The term generalized left-corner parser is used very differently in psycholinguistics and computer science.
+The definition above is the psycholinguistic one.
+In computer science, there are at least two alternative definitions.
+One is simply the standard LC parser covered in this section --- GLC is then used to distinguish it from a so-called deterministic left-corner parser (which is of little interest to us at this point since natural language sentences are ambiguous and thus inherently non-deterministic).
+The other usage of GLC refers to an LC parser with a particular graph-based data structure.
+% fixme: add references
 
+
+\section{Left-Corner Parsing as Top-Down Parsing} 
+\label{sec:LC_GrammarTransform}
 Remember from the discussion in Cha.~\ref{cha:ParserOverview} that parsers can be viewed as algorithms for constructing intersection grammars in an incremental fashion.
 From this perspective, a parser is a particular kind of map from grammars to grammars, which is also called a \emph{grammar transform}.
 We will now look at another instance of this idea: an LC parser for grammar $G$ is a top-down parser operating on the \emph{left-corner transform} of $G$ \citep{RosenkrantzLewis70,AhoUllman72}.
@@ -1018,7 +1026,7 @@ It is also instructive to compare this parse history to the ones for the recursi
 With the same preferences for rewrite rules, the LC parser finds the right parse after three failures whereas recursive descent has at least nine failures and shift reduce still five. 
 %
 \begin{figure}[tbp]
-\hspace{-8em}
+% \hspace{-8em}
 \footnotesize
     \begin{tikzpicture}[
         level 1+/.style = { level distance = 2em },
@@ -1172,10 +1180,31 @@ Left recursion was a problem for top-down parsing because it can prevent the par
 This is not an issue with the LC parser thanks to the bottom-up restrictions on the prediction steps.
 %
 \begin{examplebox}[LC Parse of Nested Possessive DPs]
-    The table below shows a successful parse for \emph{John's father's car's exhaust pipe disappeared} with a grammar that analyzes possessive DPs with the rules DP \rewrite\ DP D$'$ and D$'$ \rewrite\ Poss NP\@.
+    The table below shows a successful parse for \emph{John's father's car's exhaust pipe disappeared} with the following grammar:
     %
     \begin{center}
-        \begin{tabular}{r|l}
+        \begin{tabular}{rcl@{\hspace{2em}}rcl}
+            S    & \rewrite & DP VP
+            & 
+            Poss & \rewrite & 's \\
+            DP   & \rewrite & DP D$'$
+            & 
+            N    & \rewrite & father | car | exhaust pipe
+            \\
+            D$'$ & \rewrite & Poss NP
+            & 
+            PN   & \rewrite & John
+            \\
+            NP   & \rewrite & N | PN
+            &
+            V    & \rewrite & disappeared
+            \\
+            VP   & \rewrite & V
+        \end{tabular}
+    \end{center}
+    %
+    \begin{center}
+        \begin{longtable}{r|l}
             \textbf{parse item} & \textbf{inference rule}\\
             $\lbrack$0, \psep]                                              & axiom\\
             $\lbrack$1, John \psep]                                         & shift\\
@@ -1218,12 +1247,19 @@ This is not an issue with the LC parser thanks to the bottom-up restrictions on 
             $\lbrack$8, VP \psep [\tsb{S} VP]]                              & reduce\\
             $\lbrack$8, \psep [\tsb{S} ]]                                   & scan\\
             $\lbrack$9, S \psep]                                            & complete
-        \end{tabular}
+        \end{longtable}
     \end{center}
     %
     Pay close attention to how the parser constantly goes through the same sequence of inference rules for each DP layer: a possessive DP is constructed and discharged via the left-corner prediction of another DP\@.
 \end{examplebox}
 %
+\begin{exercise}
+    In Sec.~\ref{sec:LC_GrammarTransform} we looked at the LC parser more abstractly as a top-down parser that operates on the left-corner transform of the original grammar.
+    This view is actually very illuminating regarding why LC parsers do not struggle with left recursion.
+    Construct the left-corner transform of the grammar and draw the tree it assigns to the example sentence.
+    What is striking about this tree compared to the original one, and how does this further our understanding of left recursion in LC parsing?
+\end{exercise}
+
 Since the LC parser completely finishes a possessive DP before starting the next higher one, it behaves similar to the shift reduce parser for left embeddings, with memory load remaining mostly unaffected by the number of embeddings.
 This can also be seen in the annotated parse tree, which may have a high payload but maximum tenure is always $6$ irrespective of the number of embedded DPs.
 %
@@ -1418,7 +1454,7 @@ We can confirm this claim using a modified parse annotation scheme to represent 
                                     \Lab{that}{18}{19}
                                 ]
                                 [.\IBLab{S}{16}{28}
-                                    [.\IBLab{NP}{23}{24}
+                                    [.\Lab{NP}{23}{24}
                                         [.\Lab{Det}{22}{23}
                                             \Lab{the}{21}{22}
                                         ]
@@ -1435,7 +1471,7 @@ We can confirm this claim using a modified parse annotation scheme to represent 
                                         [.\Lab{C}{34}{35}
                                             \Lab{that}{33}{34}
                                         ]
-                                        [.\IBLab{S}{35}{37}
+                                        [.\IBLab{S}{35}{43}
                                             [.\IBLab{NP}{31}{39}
                                                 [.\Lab{Det}{37}{38}
                                                     \Lab{the}{36}{37}
@@ -1444,9 +1480,9 @@ We can confirm this claim using a modified parse annotation scheme to represent 
                                                     \Lab{cat}{40}{41}
                                                 ]
                                             ]
-                                            [.\IBLab{VP}{43}{37}
-                                                [.\Lab{V}{36}{37}
-                                                    \Lab{ate}{35}{36}
+                                            [.\IBLab{VP}{43}{47}
+                                                [.\Lab{V}{45}{46}
+                                                    \Lab{ate}{44}{45}
                                                 ]
                                             ]
                                         ]
@@ -1458,14 +1494,12 @@ We can confirm this claim using a modified parse annotation scheme to represent 
                 ]
         \end{tikzpicture}
     \end{center}
-
-    The payload of right embedding is enormous with an LC parser, and tenure also increases with every level of embedding.
+    %
+    As you can see arc-eagerness has no effect on the payload, but it greatly reduces the maximum tenure, which is now a function of how many daughters and left siblings a node has.
+    The size of those siblings and daughters, however, is completely irrelevant.
 \end{examplebox}
 
-
-\begin{examplebox}[Run of shift reduce parser over center embedding sentence]
-    We use the same promotion-style analysis of relative clauses as in Sec.~\ref{sub:TopDownEval_CenterEmbedding}.
-    %
+\begin{examplebox}[Run of arc-eager LC parser over center embedding sentence]
     \begin{center}
         \footnotesize
         \begin{tikzpicture}[
@@ -1478,59 +1512,59 @@ We can confirm this claim using a modified parse annotation scheme to represent 
             level 7/.style = { sibling distance = -.5em }
             ]
             \Tree
-                [.\Lab{S}{36}{}
-                    [.\IBLab{NP}{3}{36}
+                [.\Lab{S}{4}{5}
+                    [.\Lab{NP}{3}{4}
                         [.\Lab{N}{2}{3}
                             \Lab{I}{1}{2}
                         ]
                     ]
-                    [.\Lab{VP}{35}{36}
-                        [.\IBLab{V}{5}{35}
-                            \Lab{bought}{4}{5}
+                    [.\IBLab{VP}{4}{9}
+                        [.\Lab{V}{7}{8}
+                            \Lab{bought}{6}{7}
                         ]
-                        [.\Lab{NP}{34}{35}
-                            [.\IBLab{Det}{7}{34}
-                                \Lab{the}{6}{7}
+                        [.\IBLab{NP}{8}{13}
+                            [.\Lab{Det}{11}{12}
+                                \Lab{the}{10}{11}
                             ]
-                            [.\Lab{CP}{33}{34}
-                                [.\IBLab{N}{9}{33}
-                                    \Lab{cheese}{8}{9}
+                            [.\IBLab{CP}{12}{17}
+                                [.\Lab{N}{15}{16}
+                                    \Lab{cheese}{14}{15}
                                 ]
-                                [.\IBLab{C}{11}{33}
-                                    \Lab{that}{10}{11}
+                                [.\IBLab{C}{16}{20}
+                                    \Lab{that}{18}{19}
                                 ]
-                                [.\Lab{S}{32}{33}
-                                    [.\IBLab{NP}{28}{32}
-                                        [.\IBLab{Det}{13}{28}
-                                            \Lab{the}{12}{13}
+                                [.\IBLab{S}{16}{44}
+                                    [.\Lab{NP}{23}{24}
+                                        [.\Lab{Det}{22}{23}
+                                            \Lab{the}{21}{22}
                                         ]
-                                        [.\Lab{CP}{27}{28}
-                                            [.\IBLab{N}{15}{27}
-                                                \Lab{mouse}{14}{15}
+                                        [.\IBLab{CP}{23}{28}
+                                            [.\Lab{N}{26}{27}
+                                                \Lab{mouse}{25}{26}
                                             ]
-                                            [.\IBLab{C}{17}{27}
-                                                \Lab{that}{16}{17}
+                                            [.\IBLab{C}{27}{31}
+                                                \Lab{that}{29}{30}
                                             ]
-                                            [.\Lab{S}{26}{27}
-                                                [.\IBLab{NP}{22}{26}
-                                                    [.\IBLab{Det}{19}{22}
-                                                        \Lab{the}{18}{19}
+                                            [.\IBLab{S}{27}{39}
+                                                [.\Lab{NP}{34}{35}
+                                                    [.\Lab{Det}{33}{34}
+                                                        \Lab{the}{32}{33}
                                                     ]
-                                                    [.\Lab{N}{21}{22}
-                                                        \Lab{cat}{20}{21}
+                                                    [.\Lab{N}{37}{38}
+                                                        \Lab{cat}{36}{37}
                                                     ]
                                                 ]
-                                                [.\Lab{VP}{25}{26}
-                                                    [.\Lab{V}{24}{25}
-                                                        \Lab{ate}{23}{24}
+                                                [.\IBLab{VP}{38}{43}
+                                                    [.\Lab{V}{41}{42}
+                                                        \Lab{ate}{40}{41}
                                                     ]
                                                 ]
                                             ]
                                         ]
                                     ]
-                                    [.\Lab{VP}{31}{32}
-                                        [.\Lab{V}{30}{31}
-                                            \Lab{wanted}{29}{30}
+                                    [.\IBLab{VP}{43}{48}
+                                        [.\Lab{V}{46}{47}
+                                            \Lab{wanted}{45}{46}
                                         ]
                                     ]
                                 ]
@@ -1541,10 +1575,49 @@ We can confirm this claim using a modified parse annotation scheme to represent 
         \end{tikzpicture}
     \end{center}
     %
-    The parse shows a payload of 11, just as in the case of the recursive descent parser. 
-    The maximum tenure is 33, which is a lot more than the recursive descent parser's 17.
-    The sum tenure is 184 (over three times the recursive descent parser's 55).
+    At first sight the center embedding parse does not look too different from the right embedding variant.
+    In fact, right embedding even looks more challenging than center embedding since the payload is slightly higher (10 for center embedding, 12 for right embedding).
+    The real difference, however, is maximum tenure.
+    The S nodes in the center embedding sentence have a tenure of 12 and 28, respectively, whereas their right embedding analogues only have a tenure of 8 and 12.
 \end{examplebox}
+%
+\begin{exercise}
+    There is a subtle but important discrepancy between the LC parser with eager scan and the arc-eager one depicted above.
+    As the eager scan rule completely eliminates $M$, it can no longer serve in any left-corner prediction.
+    To some extent that state of affairs is very welcome: if we could use $M$ immediately for a left-corner prediction right after eager scan, the nodes predicted this way would appear immediately to the right of the dot.
+    Consequently, the parser would work on them first before it has even verified that the daughters of $M$ exist.
+    Not only would this defeat the point of left-corner parsing, it would also produce very high tenure for the daughters of $M$.
+
+    In the examples above, I use a particular strategy where LC predictions of $M$ are triggered by the last recognized node in the subtree routed by $M$, which is always the rightmost daughter of $M$.
+    Complete the parsing schema for the arc-eager LC parser by extending the predict rule in this fashion.
+\end{exercise}
+
+The findings of \citet{Resnik92} have led many researchers to believe that LC parsers are the ideal model of human sentence processing.
+But we should not accept this view too readily.
+First of all, arc-eagerness is essential to get the right memory-load for the three types of embedding.
+But as \citeauthor{Resnik92} himself points out in a brief remark at the end of the paper, an LC parser that always operates in an arc-eager fashion is not complete since it fails to find a parse for simple sentences like \emph{John met Mary yesterday}.
+%
+\begin{exercise}
+    Explain why this is necessarily the case under the assumption that \emph{yesterday} is a VP-adjunct and the parser can only make arc-eager inferences.
+\end{exercise}
+
+Even if one posits a more sophisticated control structure hard problems arise.
+Suppose that both arc-eager and standard LC inferences are available but the former are preferred over the latter in the control structure.
+Then a very simple sentence like \emph{John met Mary briefly yesterday with a friend at a party} would require a massive parse history to be built that rivals that of garden paths.
+The reason for that is simple: for each adjunct, the parser has a choice between arc-eager or standard inference, only the latter of which yields a successful parse.
+If arc-eager is the default, then only the last out of all options will yield the right parse.
+With 4 adjuncts, there are $2^4 = 16$ parses to explore, so the parser will fail $15$ times before finding the right parse.
+This is much worse than what we saw in our discussion of garden paths.
+So either our VP-adjunct example is incorrectly predicted to be a garden path sentence, too, or we lose our account of garden paths.
+
+One idea might be that the human parser has a control structure that is exceedingly good at estimating the risk of an arc-eager inference in a given syntactic context and prefers standard inference in these cases.
+In a certain sense, this extends the idea of a GLC parser, where specific rules are used more or less predictively, and extends it to the control structure.
+This would be a very complicated and overly expressive model, though.
+With that many parameters to tune, there is little doubt that almost any processing effect can be accounted for.
+This is not a good situation to be in, for if the model can account for absolutely anything, it tells us absolutely nothing.
+If you find that remark puzzling, just keep in mind that this is the very same reason we put strong restrictions on our linguistic theories, be it in phonology, morphology or syntax.
+We do not want descriptions, we want generalizations and predictions.
+A weak formalism makes very strong predictions, an overly malleable one does not.
 
 \begin{exercise}
     Are merely local syntactic coherence effects expected with a standard LC parser?
