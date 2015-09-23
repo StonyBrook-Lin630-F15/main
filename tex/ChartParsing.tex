@@ -367,13 +367,40 @@ Once a useful data structure is in place, using it as a record of parse trees an
 
 \subsection{Intuition}
 
-The Cock-Younger-Kasami parser --- usually abbreviated CYK or CKY --- is not only the best-known chart parsing algorithm, it is probably also the most popular parser in computational linguistics.
+The Cock-Younger-Kasami algorithm --- usually abbreviated CYK or CKY --- is not only the best-known chart parsing algorithm, it is also the most popular parser in computational linguistics.
 That's probably due to its high efficiency coupled with its conceptual simplicity.
 The idea behind the CKY parser is indeed very simple: we read in the entire input string and then carry out all possible bottom-up reductions in parallel.
 In a certain sense, the CKY parser behaves like a shift-reduce parser where \textsc{i}) we always apply shift until we have reached the end of the string, and \textsc{ii}) parse items can participate in multiple reduction steps.
 
 The CKY parser is usually specified in the format of a chart parser.
-Suppose we have the input string \emph{the anvil hit the duck on the head}.
+Suppose we have the input string \emph{the anvil hit the duck on the head}, which should be analyzed with an extended version of our usual toy grammar.
+%
+\begin{center}
+    \begin{tabular}{rrcl@{\hspace{3em}}rrcl}
+        1)  & S   & \rewrite\ & NP VP               &
+        \phantom{1}9)  & Det & \rewrite\ & a | the
+        \\
+        2)  & NP  & \rewrite\ & PN                  &
+        10) & N   & \rewrite\ & car | truck | anvil | duck | hit
+        \\
+        3)  & NP  & \rewrite\ & Det N               &
+        11) & PN  & \rewrite\ & Bugs | Daffy
+        \\
+        4)  & NP  & \rewrite\ & NP PP               &
+        12) & P   & \rewrite\ & on
+        \\
+        5)  & PP  & \rewrite\ & P NP                &
+        13)  & Vi  & \rewrite\ & fell over | duck
+        \\
+        6)  & VP  & \rewrite\ & Vi                  &
+        14) & Vt  & \rewrite\ & hit
+        \\
+        7)  & VP  & \rewrite\ & Vt NP               &
+        \\
+        8)  & VP  & \rewrite\ & VP PP               &
+    \end{tabular}
+\end{center}
+%
 Our first step is to draw a matrix that has as many columns and rows as there are words in the input.
 We will only use the fields above the diagonal, so the others are shaded out.
 It will be convenient to refer to individual cells by their address $(i,j)$, where $i$ is the row number and $j$ the column number.
@@ -404,9 +431,9 @@ For each word $w_i$ in the input, we enter all possible parts of speech in the c
           \hline
         0 & Det & & & & & & & \\
         1 & \cellcolor{gray!25} & N & & & & & & \\
-        2 & \cellcolor{gray!25} & \cellcolor{gray!25} & N,V & & & & & \\
+        2 & \cellcolor{gray!25} & \cellcolor{gray!25} & N,Vt & & & & & \\
         3 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & Det & & & & \\
-        4 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & N,V & & & \\
+        4 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & N,Vi & & & \\
         5 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & P & & \\
         6 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & Det & \\
         7 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & N\\
@@ -423,9 +450,9 @@ In order to fill in the remaining cells, we use the following algorithm: if cell
           \hline
         0 & Det & NP & & & S & & & S\\
         1 & \cellcolor{gray!25} & N & & & & & & \\
-        2 & \cellcolor{gray!25} & \cellcolor{gray!25} & N,V & & VP & & & VP\\
+        2 & \cellcolor{gray!25} & \cellcolor{gray!25} & N,Vt & & VP & & & VP\\
         3 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & Det & NP & & & NP\\
-        4 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & N,V & & & \\
+        4 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & N,Vi & & & \\
         5 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & P & & PP\\
         6 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & Det & NP\\
         7 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & N\\
@@ -446,64 +473,336 @@ In order to turn CKY from a recognizer into a parser, we have to modify the cell
 We can represent this pictorially by adding arrows to the chart.
 %
 \begin{center}
+    \tikzexternaldisable
     \begin{tabular}{r | C{3em} C{3em} C{3em} C{3em} C{3em} C{3em} C{3em} C{3em} |}
           & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8\\
           \hline
-        0 & \tikz[remember picture](the){Det}; & NP & & & S & & & S\\
-        1 & \cellcolor{gray!25} & N & & & & & & \\
-        2 & \cellcolor{gray!25} & \cellcolor{gray!25} & N,V & & VP & & & VP\\
-        3 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & Det & NP & & & NP\\
-        4 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & N,V & & & \\
-        5 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & P & & PP\\
-        6 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & Det & NP\\
-        7 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & N\\
+        0 & \tikz[remember picture]{\node (01) {Det};} &
+            \tikz[remember picture]{\node (02){NP};} & & &
+            \tikz[remember picture]{\node (05){S};} & & &
+            \tikz[remember picture]{\node (08-1){S};},%
+            \tikz[remember picture]{\node (08-2){S};} \\
+        1 & \cellcolor{gray!25} &
+            \tikz[remember picture]{\node (12){N};} & & & & & & \\
+        2 & \cellcolor{gray!25} & \cellcolor{gray!25} &
+            \tikz[remember picture]{\node(23N){N};},%
+            \tikz[remember picture]{\node(23V){Vt};} & &
+            \tikz[remember picture]{\node(25){VP};} & & &
+            \tikz[remember picture]{\node(28-1){VP};},%
+            \tikz[remember picture]{\node(28-2){VP};}
+            \\
+        3 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} &
+            \tikz[remember picture]{\node(34){Det};} &
+            \tikz[remember picture]{\node(35){NP};} & & &
+            \tikz[remember picture]{\node(38){NP};}\\
+        4 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} &
+            \tikz[remember picture]{\node(45N){N};},%
+            \tikz[remember picture]{\node(45V){Vi};} & & & \\
+        5 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} &
+            \tikz[remember picture]{\node(56){P};} & &
+            \tikz[remember picture]{\node(58){PP};}\\
+        6 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} &
+            \tikz[remember picture]{\node(67){Det};} &
+            \tikz[remember picture]{\node(68){NP};}\\
+        7 & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} &
+            \tikz[remember picture]{\node(78){N};}\\
         \hline
+          & the & anvil & hit & the & duck & on & the & head\\
+    \end{tabular}
+    %
+    \begin{tikzpicture}[remember picture,overlay]
+        \foreach \Source/\Target in {%
+                                     01/02,
+                                     12/02,
+                                     02/05,
+                                     25/05,
+                                     23V/25,
+                                     35/25,
+                                     34/35,
+                                     45N/35,
+                                     56/58,
+                                     68/58,
+                                     67/68,
+                                     78/68,
+                                     35/38,
+                                     58/38,
+                                     25/28-1,
+                                     28-1/08-1,
+                                     28-2/08-2%
+                                    }
+            \draw[<-,dashed,blue!55] (\Source) to (\Target);
+            \draw[<-,dashed,blue!55,bend left] (58) to (28-1);
+            \draw[<-,dashed,blue!55,bend right] (38) to (28-2);
+            \draw[<-,dashed,blue!55,bend left=20] (23V) to (28-2);
+            \draw[<-,dashed,blue!55,bend right=5] (02) to (08-1);
+            \draw[<-,dashed,blue!55,bend right=8] (02) to (08-2.south west);
+
+    \end{tikzpicture}
+    \tikzexternalenable
+\end{center}
+
+\subsection{Alternative Data Structures}
+You might have noticed right away that the chart with arrows between cells looks similar to a tree.
+While it is not exactly a tree, the chart can indeed be viewed as a directed acyclic graph (DAG) like in Fig.~\ref{fig:Chart_DAG}.
+A DAG is a set of nodes that are connected by branches that can only be followed in one direction (like the backpointers in the chart) and which are distributed in such a way that it is impossible to follow a branch out of a node and find a path back to that very same node.
+In linguistic parlance, a directed acyclic graph would be a collection of one or more multi-dominance trees, each one of which can have multiple roots.
+%
+\begin{definition}[DAG]
+    A \emph{graph} $G$ is a pair $\tuple{V,E}$ such that
+    %
+    \begin{itemize}
+        \item $V$ is a set of \emph{vertices} (also called nodes),
+        \item $E \subseteq V \times V$ of \emph{edges} (or arcs, branches) is a binary relation.
+    \end{itemize}
+    %
+    A \emph{directed acyclic graph} (DAG) is a graph that satisfies the following axioms:
+    %
+    \begin{itemize}
+        \item \textbf{Directedness}\\
+            $E$ is asymmetric: $\tuple{x,y} \in E \rightarrow \tuple{y,x} \notin E$.
+        \item \textbf{Acyclicity}\\
+            The transitive closure of $E$ is irreflexive: $\tuple{x,x} \notin E^+$.
+    \end{itemize}
+\end{definition}
+%
+\begin{figure}
+    \centering
+    \begin{tikzpicture}[
+        level 1+/.style = { level distance = 4em }
+        ]
+        \Tree
+            [.\node(08-1){S};
+                [.\node(02){NP};
+                    [.\node(01){Det};
+                        the
+                    ]
+                    [.\node(12){N};
+                        anvil
+                    ]
+                ]
+                [.\node(28-1){VP};
+                    [.\node(25){VP};
+                        [.\node(23){V};
+                            hit
+                        ]
+                        [.\node(35){NP};
+                            [.\node(34){Det};
+                                the
+                            ]
+                            [.\node(45){N};
+                                duck
+                            ]
+                        ]
+                    ]
+                    [.\node(58){PP};
+                        [.\node(56){P};
+                            on
+                        ]
+                        [.\node(68){NP};
+                            [.\node(67){Det};
+                                the
+                            ]
+                            [.\node(78){N};
+                                head
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+
+        \node (38) at ($(58) !.5! (23) + (1em,4em)$) {NP};
+        \node (28-2) at ($(02) !.5! (28-1)$) {VP};
+        \node (08-2) at ($(08-1) - (2.5em,0)$) {S};
+        \node (08-3) at ($(08-1) + (2.5em,0)$) {S};
+
+        \foreach \Source/\Target in {%
+                                     58/38,
+                                     35/38,
+                                     23/28-2,
+                                     38/28-2,
+                                     02/08-2,
+                                     28-2/08-2,
+                                     02/08-3,
+                                     25/08-3%
+                                    }
+            \draw (\Source.north) to (\Target.south);
+    \end{tikzpicture}
+\caption{Directed acyclic graph representation of a CKY chart with backpointers}
+\label{fig:Chart_DAG}
+\end{figure}
+%
+DAGs are used in a variety of parsing algorithms.
+In fact, many of the most efficient parsers proposed since mid 80s use some kind of DAG-like data structure, e.g.\ the generalized LR parser, also known as the \emph{Tomita parser} \citep{Tomita86, Tomita87}, and generalized left corner parsing (\citealp{Nederhof93}; not to be confused with the notion of generalized left corner parser discussed in Sec.~\ref{sub:LeftCorner_Generalized}).
+As you can see, the prefix \emph{generalized} is commonly used to denote parsers with some kind of graph-based component.
+
+Yet another data structure keeps the basic notion of a chart but makes it easier to work with.
+The standard CKY chart is somewhat odd in that all the cells below the diagonal are completely useless.
+This is cumbersome for implementations, where it would be preferable if we could simply instantiate some kind of matrix and make full use of all its cells.
+Fortunately enough this is easy to accomplish.
+
+The charts above are displayed as 2-dimensional objects where a cell contains zero or more categories.
+We can slightly modify this view by positing a third axis that lists all possible category symbols.
+Then an entry like N,V in cell $(4,5)$ becomes a convenient shorthand for indicating that we have the value \emph{true} in two cells, $(4,5,\mathrm{N})$ and $(4,5,\mathrm{V})$.
+Instead of a table, the chart is now a cube where the length of the $x$ and $y$-axes correspond to the length of the string and the $z$-axis is fixed by the number of categories in our grammar.
+Like any cube, we can rotate this 3-dimensional chart so that we are facing another one of its $6$ sides.
+Suppose then that we topple this cube over so that the $x$-axis stays the same but the $z$-axis becomes the $y$-axis (making the old $y$-axis the new $z$-axis).
+When the cube is flattened back into a table at this point, we get a $2$-dimensional chart where the $x$-axis still records the end point of substrings, but the $y$-axis is now just the list of categories in our grammar.
+In exchange, cells are no longer filled with categories but instead contain the starting index of substrings.
+Consequently, a cell at position $(\mathrm{VP},8)$ with entry $2$ means that the substring spanning from $2$ to $8$ can be reduced to a VP\@.
+Our example chart is repeated below using the new format.
+%
+\begin{center}
+    \begin{tabular}{r | C{3em} C{3em} C{3em} C{3em} C{3em} C{3em} C{3em} C{3em} |}
+          & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8\\
+          \hline
+        S & & & & & 0 & & & 0\\
+       NP & & 0 & & & 3 & & & 3\\
+       VP & & & & & 2 & & & 2\\
+       PP & & & & & & & & 5\\
+      Det & 0& & & 3 & & & 6 & \\
+       N  & & 1 & 2 & & 4 & & & 7 \\
+       P  & & & & & & 5 & & \\
+       PN & & & & & & & & \\
+       Vi & & & & & 4 & & & \\
+       Vt & & & 2 & & & & & \\
+          \hline
           & the & anvil & hit & the & duck & on & the & head\\
     \end{tabular}
 \end{center}
 
+This kind of table is much harder to decipher for humans, but it contains no wasted cells.
+In addition, it behaves like any matrix over natural numbers and thus can be manipulated using well-understood (and efficiently implemented!) operations like matrix multiplication.
+
+These examples are just the tip of the iceberg, the number of viable data structures is myriad.
+That's why it is so important that we modularize parsers and study parsing schemata, control structures and data structures independently.
+If we had taken a purely algorithmic approach, then each one of these parsers would look very different because a graph must be handled very differently from a table.
+But as we will see next, the CKY parsing schema remains the same when we switch from charts to graphs or the other way round.
+
 \subsection{Formal Specification}
+The original CKY parsing algorithm combines two ideas: a mechanism for parallel bottom-up reduction and an efficient implementation of that idea via charts.
+But since both are rolled into one algorithmic specification, it is needlessly hard to make out for the uninitiated what CKY parsing is really about.
+As usual, the specification via a parsing schema is much more succinct and brings out the underlying logic more clearly.
 
-Axiom: $[i,a,i+1]$ for each $a = w_i$
-Goal: $[0,S,n]$
+In contrast to all the parsers we have seen so far, the CKY parser absolutely needs both indices in its parse items, so that the general form of parse items is $[i,\beta,j]$.
+As another distinguishing property we have multiple axioms instead of just one.
+For each terminal $a$ such that $a = w_i$, there is a corresponding axiom $[i,a,i+1]$.
+This emphasizes the parallel nature of the CKY-parser --- the parser is not at all incremental but rather operates on the whole string at once.
+The goal item of CKY is $[0,S,n]$, just like in our original parsing schema for bottom-up parsers.
+Just from the goal and the axioms, then, we can already infer essential aspects of CKY parsing.
 
+Only the inference rules remain to be specified, of which the CKY parser has only one.
+%
 \begin{prooftree}
     \AxiomC{$[i, B, j]$}
     \AxiomC{$[j, C, k]$}
     \LeftLabel{\textbf{Reduce}\qquad}
+    \RightLabel{$A \rewrite B C \in R$}
     \BinaryInfC{$[i, A, k]$}
 \end{prooftree}
+%
+It is instructive to contrast this version of the Reduce rule with the one used in a normal bottom-up parser.
+There we infer from a single item $[i,\alpha \gamma \beta,j]$ the validity of a new item $[i,\alpha N \beta, j]$.
+We may visualize this as adding some tree structure on top of a string of symbols.
+The CKY parser, on the other hand, combines two subtrees into one tree.
 
+Nevertheless the same effect can be obtained in a bottom-up parser.
+Suppose that $B$ and $C$ in the pattern above are reduced from $[i,B_1,x] [x,B_2,j]$ and $[j,C_1,y] [y,C_2,k]$, respectively.
+In the CKY parser we can go from these four items to $[i, A, k]$ via three reduction steps.
+A breadth-first parser carries out a comparable reduction in the same number of steps.
+%
+\begin{center}
+    \begin{tabular}{r|l}
+        \textbf{parse item} & \textbf{inference rule}\\
+        $[i,\alpha B_1 B_2 C_1 C_2 \beta, n]$ & already derived\\
+        $[i,\alpha B C_1 C_2 \beta, n]$ & reduce\\
+        $[i,\alpha B C \beta,n]$ & reduce\\
+        $[i,\alpha A \beta,n]$ & reduce
+    \end{tabular}
+\end{center}
+%
+What makes the CKY parser special thus cannot be its inference rules.
+Instead, it is the format of its parse items, which is ideally suited to memoization.
 
-\section{Earley}
+Suppose for the sake of argument that $B_1 B_2$ can also be reduced to $B'$ and $C_1 C_2$ to $C'$.
+In the CKY parser, that is not much of an issue.
+Two reductions for $B_1 B_2$ give us $B$ and $B'$, and two reductions for $C_1 C_2$ yield $C$ and $C'$.
+If only $B C$ can be reduced further, we are guaranteed to arrive at $A$ in 5 steps.
+In the standard bottom-up parser, it might take us much longer.
+As can be seen in Fig.~\ref{fig:Chart_BottomUpExtraSteps}, it may require 9 steps to successfully reduce $[i,\alpha B_1 B_2 C_1 C_2 \beta, n]$ to $[i,\alpha A \beta, n]$ (depending on which reductions are prioritized by the control structure).
+This is purely due to the fact that reduction steps have to be repeated.
+%
+\begin{figure}
+    \centering
+    \begin{tikzpicture}
+        \Tree
+            [.{$[i,\alpha B_1 B_2 C_1 C_2 \beta,n]$}
+                [.{$[i,\alpha B C_1 C_2 \beta, n]$}
+                    [.{$[i,\alpha B C \beta,n ]$}
+                        [.{$[i,\alpha A \beta, n]$}
+                        ]
+                    ]
+                ]
+                [.{$[i,\alpha B C_1 C_2 \beta, n]$}
+                    [.{$[i,\alpha B C' \beta,n ]$}
+                    ]
+                ]
+                [.{$[i,\alpha B' C_1 C_2 \beta, n]$}
+                    [.{$[i,\alpha B' C \beta,n ]$}
+                    ]
+                ]
+                [.{$[i,\alpha B' C_1 C_2 \beta, n]$}
+                    [.{$[i,\alpha B' C' \beta,n ]$}
+                    ]
+                ]
+            ]
+    \end{tikzpicture}
+\caption{A standard bottom-up parse cannot efficiently reuse items and thus must take more steps}
+\label{fig:Chart_BottomUpExtraSteps}
+\end{figure}
 
-\subsection{Intuition}
+\subsection{A Remark on Chomsky Normal Form}
 
-\subsection{Formal Specification}
-Axiom: $[0, S' \rewrite \psep S,0]$
-Goal: $[0, S' \rewrite S \psep,0]$
+Throughout the entire discussion so far, we have implicitly assumed that rewrite rules are in \emph{Chomsky Normal Form}.
+%
+\begin{definition}[Chomsky Normal Form]
+    A context-free grammar is in Chomsky Normal Form (CNF) iff every rewrite rule is in one of two forms:
+    %
+    \begin{itemize}
+        \item $A \rewrite B C$, where $A,B,C \in N$, or
+        \item $A \rewrite a$, where $A\in N$ and $a \in T$.
+    \end{itemize}
+\end{definition}
+%
+As indicated by the term \emph{normal form}, every CFG can be brought into CNF\@.
+%
+\begin{exercise}
+    Define an algorithm for transforming arbitrary CFGs into CNF\@.
+\end{exercise}
+%
+\begin{exercise}
+    Another common normal form for CFGs is \emph{Greibach Normal Form} (GNF), which only allows rewrite rules of the form $A \rewrite a \alpha$, where $\alpha \in N^*$.
+    Can you define an algorithm that converts any arbitrary CFG into GNF as long as it does not generate the empty string?
+    \emph{Hint:} You already know an algorithm that gets you halfway there.
+\end{exercise}
 
+It is often stated that the CKY-parser only works for grammars in CNF\@.
+This statement is somewhat misleading.
+The CKY algorithm, which combines the parsing schema from the previous section with a chart-based data structure, is indeed limited to CNF grammars.
+This is so because the chart does not provide a good way of dealing with rewrite rules that have more than two symbols on their right-hand side.
+The CKY parsing schema, on the other hand, can easily be generalized to arbitrary context-free grammars.
+%
 \begin{prooftree}
-    \AxiomC{$[i, A \rewrite \alpha \psep a \beta,j]$}
-    \LeftLabel{\textbf{Scan}\qquad}
-    \RightLabel{$a = w_{i}$}
-    \UnaryInfC{$[i, A \rewrite \alpha a \psep \beta, j+1]$}
+    \AxiomC{$[i, B_1, j_1]$}
+    \AxiomC{$[j_1, B_2, j_2]\qquad \cdots$}
+    \AxiomC{$[j_n, B_{n+1}, k]$}
+    \LeftLabel{\textbf{Reduce}\qquad}
+    \RightLabel{$A \rewrite B_1 B_2 \cdots B_{n+1} \in R$}
+    \TrinaryInfC{$[i, A, k]$}
 \end{prooftree}
+%
+Any known implementation is still much faster with CNF grammars, but the claim that CKY parsing only works for those is misleading.
 
-\begin{prooftree}
-    \AxiomC{$[i, A \rewrite \alpha \psep B \beta,j]$}
-    \LeftLabel{\textbf{Predict}\qquad}
-    \RightLabel{$B \rewrite \gamma \in R$}
-    \UnaryInfC{$[j, B \rewrite \psep \gamma, j]$}
-\end{prooftree}
+\subsection{Formalizing the Data Structure}
 
-\begin{prooftree}
-    \AxiomC{$[i, A \rewrite \alpha \psep B \beta,j]$}
-    \AxiomC{$[j, B \rewrite \gamma \psep,k]$}
-    \LeftLabel{\textbf{Complete}\qquad}
-    \BinaryInfC{$[i, A \rewrite \alpha B \psep \beta,k]$}
-\end{prooftree}
-
-\subsection{Left Recursion is Unproblematic}
-
-\subsection{Relation to Left Corner Parsing}
+\bibliographystyle{./bib/linquiry3}
+\bibliography{./bib/universal,./bib/graf}

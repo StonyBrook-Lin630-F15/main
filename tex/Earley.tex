@@ -1,0 +1,33 @@
+\chapter{Earley Parsing}
+\label{cha:Earley}
+
+\section{Intuition}
+
+\section{Formal Specification}
+Axiom: $[0, S' \rewrite \psep S,0]$
+Goal: $[0, S' \rewrite S \psep,0]$
+
+\begin{prooftree}
+    \AxiomC{$[i, A \rewrite \alpha \psep a \beta,j]$}
+    \LeftLabel{\textbf{Scan}\qquad}
+    \RightLabel{$a = w_{i}$}
+    \UnaryInfC{$[i, A \rewrite \alpha a \psep \beta, j+1]$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{$[i, A \rewrite \alpha \psep B \beta,j]$}
+    \LeftLabel{\textbf{Predict}\qquad}
+    \RightLabel{$B \rewrite \gamma \in R$}
+    \UnaryInfC{$[j, B \rewrite \psep \gamma, j]$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{$[i, A \rewrite \alpha \psep B \beta,j]$}
+    \AxiomC{$[j, B \rewrite \gamma \psep,k]$}
+    \LeftLabel{\textbf{Complete}\qquad}
+    \BinaryInfC{$[i, A \rewrite \alpha B \psep \beta,k]$}
+\end{prooftree}
+
+\section{Left Recursion is Unproblematic}
+
+\section{Relation to Left Corner Parsing}
