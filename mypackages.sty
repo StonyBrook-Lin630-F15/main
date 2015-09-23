@@ -56,12 +56,12 @@
 %=================================================================
 \ifpdf				% load color with different settings for latex and pdflatex
     \ifthenelse{\boolean{color}}	% switch between color and black/white; set in myifthensettings.sty
-    {\usepackage[usenames,dvipsnames,svgnames,x11names]{xcolor}}
-    {\usepackage[usenames,dvipsnames,monochrome,svgnames,x11names]{xcolor}}
+    {\usepackage[table,usenames,dvipsnames,svgnames,x11names]{xcolor}}
+    {\usepackage[table,usenames,dvipsnames,monochrome,svgnames,x11names]{xcolor}}
 \else
     \ifthenelse{\boolean{color}}	% switch between color and black/white; set in myifthensettings.sty
-    {\usepackage[usenames,dvips]{color}}
-    {\usepackage[usenames,dvips,monochrome]{color}}
+    {\usepackage[table,usenames,dvips]{color}}
+    {\usepackage[table,usenames,dvips,monochrome]{color}}
 \fi
 
 \ifpdf				% load graphicx with different settings for latex and pdflatex
@@ -102,6 +102,8 @@
 %			misc
 %=================================================================
 % \usepackage{minitoc}
+\usepackage{array}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \usepackage{booktabs}
 \usepackage{mdwlist}
 \usepackage[titles]{tocloft}
