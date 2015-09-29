@@ -363,6 +363,10 @@ Once a useful data structure is in place, using it as a record of parse trees an
 
 \section{Chart Parsing}
 
+chart
+agenda
+dynamic programming/tabulation/memoization
+
 \section{CKY}
 
 \subsection{Intuition}
@@ -632,7 +636,7 @@ In linguistic parlance, a directed acyclic graph would be a collection of one or
 \end{figure}
 %
 DAGs are used in a variety of parsing algorithms.
-In fact, many of the most efficient parsers proposed since mid 80s use some kind of DAG-like data structure, e.g.\ the generalized LR parser, also known as the \emph{Tomita parser} \citep{Tomita86, Tomita87}, and generalized left corner parsing (\citealp{Nederhof93}; not to be confused with the notion of generalized left corner parser discussed in Sec.~\ref{sub:LeftCorner_Generalized}).
+In fact, many of the most efficient parsers proposed since mid 80s use some kind of DAG-like data structure, e.g.\ the generalized LR parser, also known as the \emph{Tomita parser} \citep{Tomita86, Tomita87}, and generalized left corner parsing (\citealp{Nederhof93}; not to be confused with the notion of generalized left corner parser discussed in Sec.~\ref{sub:LeftCorner_Generalized} of Cha.~\ref{cha:LeftCorner}).
 As you can see, the prefix \emph{generalized} is commonly used to denote parsers with some kind of graph-based component.
 
 Yet another data structure keeps the basic notion of a chart but makes it easier to work with.
@@ -685,12 +689,21 @@ As usual, the specification via a parsing schema is much more succinct and bring
 
 In contrast to all the parsers we have seen so far, the CKY parser absolutely needs both indices in its parse items, so that the general form of parse items is $[i,\beta,j]$.
 As another distinguishing property we have multiple axioms instead of just one.
-For each terminal $a$ such that $a = w_i$, there is a corresponding axiom $[i,a,i+1]$.
+For each rewrite rule $A \rewrite a$ such that $a = w_i$, there is a corresponding axiom $[i,A,i+1]$.
 This emphasizes the parallel nature of the CKY-parser --- the parser is not at all incremental but rather operates on the whole string at once.
+If desired, we could have no axiom at all and add an antecedent-less inference rule instead.
+%
+\begin{prooftree}
+    \AxiomC{}
+    \LeftLabel{\textbf{Shift}\qquad}
+    \RightLabel{$A \rewrite a, a = w_i$}
+    \UnaryInfC{$[i, A, i+1]$}
+\end{prooftree}
+%
 The goal item of CKY is $[0,S,n]$, just like in our original parsing schema for bottom-up parsers.
 Just from the goal and the axioms, then, we can already infer essential aspects of CKY parsing.
 
-Only the inference rules remain to be specified, of which the CKY parser has only one.
+Only the inference rules remain to be specified, of which the CKY parser has only two.
 %
 \begin{prooftree}
     \AxiomC{$[i, B, j]$}
@@ -727,8 +740,8 @@ Suppose for the sake of argument that $B_1 B_2$ can also be reduced to $B'$ and 
 In the CKY parser, that is not much of an issue.
 Two reductions for $B_1 B_2$ give us $B$ and $B'$, and two reductions for $C_1 C_2$ yield $C$ and $C'$.
 If only $B C$ can be reduced further, we are guaranteed to arrive at $A$ in 5 steps.
-In the standard bottom-up parser, it might take us much longer.
-As can be seen in Fig.~\ref{fig:Chart_BottomUpExtraSteps}, it may require 9 steps to successfully reduce $[i,\alpha B_1 B_2 C_1 C_2 \beta, n]$ to $[i,\alpha A \beta, n]$ (depending on which reductions are prioritized by the control structure).
+The standard bottom-up parser takes longer.
+As can be seen in Fig.~\ref{fig:Chart_BottomUpExtraSteps}, it may require 7 steps to successfully reduce $[i,\alpha B_1 B_2 C_1 C_2 \beta, n]$ to $[i,\alpha A \beta, n]$ (depending on which reductions are prioritized by the control structure).
 This is purely due to the fact that reduction steps have to be repeated.
 %
 \begin{figure}
@@ -741,16 +754,12 @@ This is purely due to the fact that reduction steps have to be repeated.
                         [.{$[i,\alpha A \beta, n]$}
                         ]
                     ]
-                ]
-                [.{$[i,\alpha B C_1 C_2 \beta, n]$}
                     [.{$[i,\alpha B C' \beta,n ]$}
                     ]
                 ]
                 [.{$[i,\alpha B' C_1 C_2 \beta, n]$}
                     [.{$[i,\alpha B' C \beta,n ]$}
                     ]
-                ]
-                [.{$[i,\alpha B' C_1 C_2 \beta, n]$}
                     [.{$[i,\alpha B' C' \beta,n ]$}
                     ]
                 ]
@@ -794,15 +803,17 @@ The CKY parsing schema, on the other hand, can easily be generalized to arbitrar
 \begin{prooftree}
     \AxiomC{$[i, B_1, j_1]$}
     \AxiomC{$[j_1, B_2, j_2]\qquad \cdots$}
-    \AxiomC{$[j_n, B_{n+1}, k]$}
+    \AxiomC{$[j_{n-1}, B_n, k]$}
     \LeftLabel{\textbf{Reduce}\qquad}
-    \RightLabel{$A \rewrite B_1 B_2 \cdots B_{n+1} \in R$}
+    \RightLabel{$A \rewrite B_1 B_2 \cdots B_n \in R$}
     \TrinaryInfC{$[i, A, k]$}
 \end{prooftree}
 %
 Any known implementation is still much faster with CNF grammars, but the claim that CKY parsing only works for those is misleading.
 
 \subsection{Formalizing the Data Structure}
+Agenda initialized as $\setof{[i, A, i+1] | A \rewrite a, a = w_i}$
+
 
 \bibliographystyle{./bib/linquiry3}
 \bibliography{./bib/universal,./bib/graf}
