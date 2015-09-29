@@ -1,26 +1,235 @@
 \chapter{Earley Parsing}
 \label{cha:Earley}
 
+The CKY parser is a non-directional bottom-up parser with a chart, but chart parsing is in no way restricted to these parameters.
+In this chapter, we look at a directional chart parser with a top-down component: the Earley parser.
+The Earley parser combines a variety of techniques and insights we have encountered up to this point, and we will emphasize these connections by carefully working out the relation between Earley parsing and LC parsing.
+The Earley parser is also one of the fastest known algorithms for arbitrary CFGs, and in contrast to the CKY parser it does not require grammars to be in Chomsky Normal Form.
+In addition, Earley parsing has shown promise in some psycholinguistic modeling experiments \citep{Hale01}.
+
+
 \section{Intuition}
 
-\section{Formal Specification}
-Axiom: $[0, S' \rewrite \psep S,0]$
-Goal: $[0, S' \rewrite S \psep,0]$
+There are two intuitive perspectives of Earley parsing.
+We may either view it as a top-down parser where predictions are restricted by bottom-up reductions, or as a bottom-up parser where reductions are restricted by top-down predictions.
+In either case we are clearly dealing with a model that mixes top-down and bottom-up aspects, similar to the LC parser.
 
+The basic idea is that the parser may freely make predictions like a top-down parser, while also using bottom-up information to quickly discard incompatible predictions before they have been fully explored.
+The parser moves through the input from left-to-right while trying to construct an arc that spans from the first position to the last.
+Arcs are just convenient abstractions of subtrees in this context.
+If the end position of one arcs is the start position of another arc, they can be combined into a larger arc, just like two subtrees can be combined into a single tree by attaching them below a new node.
+The strength of the Earley parser is how it avoids spending time on arcs that are bound to fail.
+
+All of this is best explained through a concrete example.
+Suppose that we have our usual toy grammar and want to parse the input sentence \emph{The anvil hit Daffy}, represented here as an indexed string.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \node[state]           (0) at (0,0) {0};
+        \node[state]           (1) [right=of 0] {1};
+        \node[state]           (2) [right=of 1] {2};
+        \node[state]           (3) [right=of 2] {3};
+        \node[state]           (4) [right=of 3] {4};
+
+        \path[->] (0) edge node [above] {the} (1)
+                  (1) edge node [above] {anvil} (2)
+                  (2) edge node [above] {hit} (3)
+                  (3) edge node [above] {Daffy} (4);
+    \end{tikzpicture}
+\end{center}
+%
+The parser will start out by conjecturing an arc from $0$ to $0$ that is labeled S \rewrite\ \psep NP VP.
+This is tantamount to the prediction that there will be an S-arc starting in position $0$, but so far we have not recognized an NP or a VP, so the confirmed part of the arc ends in position $0$.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \node[state]           (0) at (0,0) {0};
+        \node[state]           (1) [right=of 0] {1};
+        \node[state]           (2) [right=of 1] {2};
+        \node[state]           (3) [right=of 2] {3};
+        \node[state]           (4) [right=of 3] {4};
+
+        \path[->] (0) edge node [above] {the} (1)
+                  (1) edge node [above] {anvil} (2)
+                  (2) edge node [above] {hit} (3)
+                  (3) edge node [above] {Daffy} (4);
+
+        \clip (-8em,0) rectangle (10em,13em);
+
+        \path (0) edge [loop,min distance=20em,out=160,in=60] node [above] {S $\rewrite \psep$ NP VP} (0);
+    \end{tikzpicture}
+\end{center}
+%
+Since the S-arc can only be expanded in the presence of an NP, we also add arcs for the relevant NP-predictions.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \node[state]           (0) at (0,0) {0};
+        \node[state]           (1) [right=of 0] {1};
+        \node[state]           (2) [right=of 1] {2};
+        \node[state]           (3) [right=of 2] {3};
+        \node[state]           (4) [right=of 3] {4};
+
+        \path[->] (0) edge node [above] {the} (1)
+                  (1) edge node [above] {anvil} (2)
+                  (2) edge node [above] {hit} (3)
+                  (3) edge node [above] {Daffy} (4);
+
+        \clip (-8em,0) rectangle (10em,13em);
+
+        \path (0) edge [loop,min distance=20em,out=160,in=60] node [above] {S $\rewrite \psep$ NP VP} (0)
+              (0) edge [loop,min distance=15em,out=160,in=60] node [above] {NP $\rewrite \psep$ Det N} (0)
+              (0) edge [loop,min distance=10em,out=160,in=60] node [above] {NP $\rewrite \psep$ PN} (0);
+    \end{tikzpicture}
+\end{center}
+%
+Following the same line of reasoning, we also have to add branches for each possible rewriting of Det and PN\@.
+We only add one Det-arc here to avoid cluttering the figure.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \node[state]           (0) at (0,0) {0};
+        \node[state]           (1) [right=of 0] {1};
+        \node[state]           (2) [right=of 1] {2};
+        \node[state]           (3) [right=of 2] {3};
+        \node[state]           (4) [right=of 3] {4};
+
+        \path[->] (0) edge node [above] {the} (1)
+                  (1) edge node [above] {anvil} (2)
+                  (2) edge node [above] {hit} (3)
+                  (3) edge node [above] {Daffy} (4);
+
+        \clip (-8em,0) rectangle (10em,13em);
+
+        \path (0) edge [loop,min distance=20em,out=160,in=60] node [above] {S $\rewrite \psep$ NP VP} (0)
+              (0) edge [loop,min distance=15em,out=160,in=60] node [above] {NP $\rewrite \psep$ Det N} (0)
+              (0) edge [loop,min distance=10em,out=160,in=60] node [above] {NP $\rewrite \psep$ PN} (0)
+              (0) edge [loop,min distance=5em,out=160,in=60] node [above] {Det $\rewrite \psep$ the} (0);
+    \end{tikzpicture}
+\end{center}
+%
+Now that we have an arc that can be expanded if we have the right terminal symbol, the parser reads in the word starting at position $0$, which is \emph{the}.
+This means that we have confirmed previously predicted information of the Det-arc in position $0$, so that we also add a completed Det-arc from $0$ to $1$.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \node[state]           (0) at (0,0) {0};
+        \node[state]           (1) [right=of 0] {1};
+        \node[state]           (2) [right=of 1] {2};
+        \node[state]           (3) [right=of 2] {3};
+        \node[state]           (4) [right=of 3] {4};
+
+        \path[->] (0) edge node [above] {the} (1)
+                  (1) edge node [above] {anvil} (2)
+                  (2) edge node [above] {hit} (3)
+                  (3) edge node [above] {Daffy} (4);
+
+        \clip (-8em,0) rectangle (10em,13em);
+
+        \path (0) edge [loop,min distance=20em,out=160,in=60] node [above] {S $\rewrite \psep$ NP VP} (0)
+              (0) edge [loop,min distance=15em,out=160,in=60] node [above] {NP $\rewrite \psep$ Det N} (0)
+              (0) edge [loop,min distance=10em,out=160,in=60] node [above] {NP $\rewrite \psep$ PN} (0)
+              (0) edge [loop,min distance=5em,out=160,in=60] node [above] {Det $\rewrite \psep$ the} (0)
+              (0) edge [loop,min distance=1em,out=50,in=90] node [above, pos=.75] {Det $\rewrite$ the \psep} (1);
+    \end{tikzpicture}
+\end{center}
+%
+We can now combine this arc with the NP \rewrite\ \psep Det N arc from $0$ to $0$ to produce a new arc NP \rewrite\ Det \psep N from $0$ to $1$.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \node[state]           (0) at (0,0) {0};
+        \node[state]           (1) [right=of 0] {1};
+        \node[state]           (2) [right=of 1] {2};
+        \node[state]           (3) [right=of 2] {3};
+        \node[state]           (4) [right=of 3] {4};
+
+        \path[->] (0) edge node [above] {the} (1)
+                  (1) edge node [above] {anvil} (2)
+                  (2) edge node [above] {hit} (3)
+                  (3) edge node [above] {Daffy} (4);
+
+        \clip (-8em,0) rectangle (10em,13em);
+
+        \path (0) edge [loop,min distance=20em,out=160,in=60] node [above] {S $\rewrite \psep$ NP VP} (0)
+              (0) edge [loop,min distance=15em,out=160,in=60] node [above] {NP $\rewrite \psep$ Det N} (0)
+              (0) edge [loop,min distance=10em,out=160,in=60] node [above] {NP $\rewrite \psep$ PN} (0)
+              (0) edge [loop,min distance=5em,out=160,in=60] node [above] {Det $\rewrite \psep$ the} (0)
+              (0) edge [loop,min distance=1em,out=50,in=90] node [above, pos=.75] {Det $\rewrite$ the \psep} (1)
+              (0) edge [loop,min distance=8em,out=60,in=30] node [above, pos=.4] {NP $\rewrite$ Det \psep N} (1);
+    \end{tikzpicture}
+\end{center}
+%
+This arc, in turn is used to add arcs from $1$ to $1$ that are labeled with dotted rewrite rules for N, e.g.\ N \rewrite\ \psep anvil.
+We add these arcs because the NP-arc from $0$ to $1$ can only be completed if there is an N-arc starting at position $1$.
+%
+\begin{center}
+    \begin{tikzpicture}
+        \node[state]           (0) at (0,0) {0};
+        \node[state]           (1) [right=of 0] {1};
+        \node[state]           (2) [right=of 1] {2};
+        \node[state]           (3) [right=of 2] {3};
+        \node[state]           (4) [right=of 3] {4};
+
+        \path[->] (0) edge node [above] {the} (1)
+                  (1) edge node [above] {anvil} (2)
+                  (2) edge node [above] {hit} (3)
+                  (3) edge node [above] {Daffy} (4);
+
+        \clip (-8em,0) rectangle (10em,13em);
+
+        \path (0) edge [loop,min distance=20em,out=160,in=60] node [above] {S $\rewrite \psep$ NP VP} (0)
+              (0) edge [loop,min distance=15em,out=160,in=60] node [above] {NP $\rewrite \psep$ Det N} (0)
+              (0) edge [loop,min distance=10em,out=160,in=60] node [above] {NP $\rewrite \psep$ PN} (0)
+              (0) edge [loop,min distance=5em,out=160,in=60] node [above] {Det $\rewrite \psep$ the} (0)
+              (0) edge [loop,min distance=1em,out=50,in=90] node [above, pos=.75] {Det $\rewrite$ the \psep} (1)
+              (0) edge [loop,min distance=8em,out=60,in=30] node [above, pos=.4] {NP $\rewrite$ Det \psep N} (1)
+              (1) edge [loop below] node [below] {N $\rewrite$ \psep anvil} (1);
+    \end{tikzpicture}
+\end{center}
+
+\begin{exercise}
+    Continue the example parse until you have reached the S-arc.
+\end{exercise}
+%
+\begin{exercise}
+    Use this arc-drawing system to parse the sentence \emph{then anvil hit the duck on the head} with the expanded toy grammar we used for the CKY parser.
+    Does this format offer a way of representing the structural ambiguity?
+\end{exercise}
+
+\section{Formal Specification}
+
+\subsection{Parsing Schema}
+
+In its arc-based representation the Earley parser may look rather unusual to you, but the item-based parsing schema should strike you as remarkably familiar.
+Items are of the form $[i, N \rewrite \alpha \psep \beta, j]$ and indicate that an $N$-constituent starts in position $i$ and has been recognized up to position $j$.
+As our axiom we pick $[0, \text{S}' \rewrite \psep \text{S},0]$.
+This is just a convenient shorthand so that we do not have to posit an axiom for every rewrite rule for S in our grammar.
+Given this convention, then goal item is $[0, \text{S}' \rewrite \text{S} \psep,n]$, of course.
+
+The inference rules are variants of rules that we already encountered with the shift-reduce parser and the LC parser.
+Scan turns a predicted terminal symbol into recognized information (so it is the counterpart of the LC parser's shift rule rather than the scan rule, which is used to cancel out predicted and confirmed information).
+%
 \begin{prooftree}
     \AxiomC{$[i, A \rewrite \alpha \psep a \beta,j]$}
     \LeftLabel{\textbf{Scan}\qquad}
     \RightLabel{$a = w_{i}$}
     \UnaryInfC{$[i, A \rewrite \alpha a \psep \beta, j+1]$}
 \end{prooftree}
-
+%
+Predict is similar to standard top-down prediction.
+But just like the CKY algorithm breaks large items into smaller ones that can be easily stored in a chart and used in several inference steps, the Earley parser predicts much smaller items that explicitly represent conjectured subtrees.
+%
 \begin{prooftree}
     \AxiomC{$[i, A \rewrite \alpha \psep B \beta,j]$}
     \LeftLabel{\textbf{Predict}\qquad}
     \RightLabel{$B \rewrite \gamma \in R$}
     \UnaryInfC{$[j, B \rewrite \psep \gamma, j]$}
 \end{prooftree}
-
+%
+The complete rule, finally, mirrors the behavior of the LC parser's complete rule in that it turns confirmed predictions into recognized material.
+The only difference is that now the combination of two parse items is needed to license this inference.
+%
 \begin{prooftree}
     \AxiomC{$[i, A \rewrite \alpha \psep B \beta,j]$}
     \AxiomC{$[j, B \rewrite \gamma \psep,k]$}
@@ -28,6 +237,89 @@ Goal: $[0, S' \rewrite S \psep,0]$
     \BinaryInfC{$[i, A \rewrite \alpha B \psep \beta,k]$}
 \end{prooftree}
 
+Exactly like the CKY parser, the Earley parser is mostly used as a fully parallel chart parser that explores all possible parses at the same.
+The Earley parsing schema, however, is independent of such considerations and can also be applied in a purely serial fashion.
+In this case the Earley parser behaves similar to a recursive-descent parser.
+
+\begin{examplebox}[Parse Table of an Earley Parse]
+    Consider once more the sentence \emph{the anvil hit Daffy}, parse with our usual toy grammar.
+    Then the shortest possible sequential Earley parse yields a parse table that closely resembles the one of the recursive-descent parser.
+    %
+    \begin{center}
+        \begin{tabular}[t]{c@{\hspace{2em}}c}
+            \begin{tabular}{r|l}
+                \textbf{parse item} & \textbf{inference rule}\\
+                $\lbrack$0, \psep S, 4]        & axiom\\
+                $\lbrack$0, \psep NP VP, 4]    & predict(1)\\
+                $\lbrack$0, \psep Det N VP, 4] & predict(3)\\
+                $\lbrack$0, \psep the N VP, 4] & predict(6)\\
+                $\lbrack$1, \psep N VP, 4]     & scan\\
+                \\
+                $\lbrack$1, \psep truck VP, 4] & predict(7)\\
+                $\lbrack$2, \psep VP, 4]       & scan\\
+                \\
+                \\
+                $\lbrack$2, \psep Vt NP, 4]    & predict(5)\\
+                $\lbrack$2, \psep hit NP, 4]   & predict(10)\\
+                $\lbrack$3, \psep NP, 4]       & scan\\
+                \\
+                $\lbrack$3, \psep PN, 4]       & predict(2)\\
+                $\lbrack$3, \psep Daffy, 4]    & predict(8)\\
+                $\lbrack$4, \psep, 4]          & scan
+                \\
+                \\
+                \\
+                \\
+                \\
+            \end{tabular}
+            %
+            &
+            %
+            \begin{tabular}{r|l}
+                \textbf{parse item} & \textbf{inference rule}\\
+                $\lbrack$0, S$'$ \rewrite \psep S, 0]   & axiom\\
+                $\lbrack$0, S \rewrite \psep NP VP, 0]  & predict(1)\\
+                $\lbrack$0, NP \rewrite \psep Det N, 0] & predict(3)\\
+                $\lbrack$0, Det \rewrite \psep the, 0]  & predict(6)\\
+                $\lbrack$0, Det \rewrite the \psep, 1]  & scan\\
+                $\lbrack$0, NP \rewrite Det \psep N, 1] & complete\\
+                $\lbrack$1, N \rewrite \psep truck, 1]  & predict(7)\\
+                $\lbrack$1, N \rewrite truck \psep, 2]  & scan\\
+                $\lbrack$0, NP \rewrite Det N \psep, 2] & complete\\
+                $\lbrack$0, S \rewrite NP \psep VP, 2]  & complete\\
+                $\lbrack$2, VP \rewrite \psep Vt NP, 2] & predict(5)\\
+                $\lbrack$2, Vt \rewrite \psep hit, 2]   & predict(10)\\
+                $\lbrack$2, Vt \rewrite hit \psep, 3]   & scan\\
+                $\lbrack$2, VP \rewrite Vt \psep NP, 3] & complete\\
+                $\lbrack$3, NP \rewrite \psep PN, 3]    & predict(2)\\
+                $\lbrack$3, PN \rewrite \psep Daffy, 3] & predict(8)\\
+                $\lbrack$3, PN \rewrite Daffy \psep, 4] & scan\\
+                $\lbrack$3, NP \rewrite PN \psep, 4]    & complete\\
+                $\lbrack$2, VP \rewrite Vt NP \psep, 4] & complete\\
+                $\lbrack$0, S \rewrite NP VP \psep, 4]  & complete\\
+                $\lbrack$0, S$'$ \rewrite S\psep, 4]    & complete
+            \end{tabular}
+        \end{tabular}
+    \end{center}
+    %
+\end{examplebox}
+%
+The direct comparison of parse tables in the example above highlights that we may think of the recursive-descent parser as a particular instantiation of the Earley parser: a single recursive-descent scan represents an Earley scan followed by one or more completion steps.
+In general, a parser that takes fewer steps is more efficient than one that takes more steps.
+So if we are interested in designing a serial parser with backtracking that does not reuse parse items, recursive-descent is a better choice than Earley.
+In other words, recursive-descent is a smart modification of the Earley parsing schema for the purpose of serial parsing.
+
+This view also highlights the downside of recursive-descent in comparison to Earley: the latter can easily reuse parse items and thus is a much more natural candidate whenever the parser is allowed to memorize and reuse parse items.
+This makes Earley a much better choice for chart parsing and industrial applications.
+
+\subsection{Adding Chart Parsing Techniques}
+
+
 \section{Left Recursion is Unproblematic}
 
 \section{Relation to Left Corner Parsing}
+\subsection{Removing Top-Down Filtering}
+\subsection{Left Corner Parsing as a Step Contraction}
+
+% \bibliographystyle{./bib/linquiry3}
+% \bibliography{./bib/universal,./bib/graf}
