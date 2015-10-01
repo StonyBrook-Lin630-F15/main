@@ -5,7 +5,7 @@ The CKY parser is a non-directional bottom-up parser with a chart, but chart par
 In this chapter, we look at a directional chart parser with a top-down component: the Earley parser.
 The Earley parser combines a variety of techniques and insights we have encountered up to this point, and we will emphasize these connections by carefully working out the relation between Earley parsing and LC parsing.
 The Earley parser is also one of the fastest known algorithms for arbitrary CFGs, and in contrast to the CKY parser it does not require grammars to be in Chomsky Normal Form.
-In addition, Earley parsing has shown promise in some psycholinguistic modeling experiments \citep{Hale01}.
+In addition, Earley parsing has shown promise in some psycholinguistic modeling experiments \citep{Hale01}, which will be discussed further in Cha.~\ref{cha:Prob}.
 
 
 \section{Intuition}
@@ -314,12 +314,256 @@ This makes Earley a much better choice for chart parsing and industrial applicat
 
 \subsection{Adding Chart Parsing Techniques}
 
+agenda
+
+chart
 
 \section{Left Recursion is Unproblematic}
 
-\section{Relation to Left Corner Parsing}
-\subsection{Removing Top-Down Filtering}
-\subsection{Left Corner Parsing as a Step Contraction}
+When we looked at the recursive descent parser, we saw that left recursion can force it to enter an infinite loop of top-down predictions.
+The shift-reduce and LC parsers do not run into this issue since they use bottom-up information.
+The same is true of the Earley parser, which uses bottom-up information to restrict top-down predictions.
+It is interesting to see, though, how exactly the Earley parser avoids infinite loops.
+%
+\begin{examplebox}[Earley Parse of Nested Possessive DPs]
+    The sentence \emph{John's father's car's exhaust pipe disappeared} is to be analyzed with the following grammar:
+    %
+    \begin{center}
+        \begin{tabular}{rcl@{\hspace{2em}}rcl}
+            S    & \rewrite & DP VP
+            & 
+            Poss & \rewrite & 's \\
+            DP   & \rewrite & DP D$'$ | PN
+            & 
+            N    & \rewrite & father | car | exhaust pipe
+            \\
+            D$'$ & \rewrite & Poss NP
+            & 
+            PN   & \rewrite & John
+            \\
+            NP   & \rewrite & N
+            &
+            V    & \rewrite & disappeared
+            \\
+            VP   & \rewrite & V
+        \end{tabular}
+    \end{center}
+    
+    Since the chart for this sentence is rather large, we look at individual cells instead.
+    Cell $(0,0)$ starts out with the axiom S$'$ \rewrite\ \psep S, which this triggers a prediction of S \rewrite \psep DP VP\@.
+    This item, in turn, yields two predictions: DP \rewrite \psep DP D$'$ and DP \rewrite \psep PN\@.
+    The latter also adds PN \rewrite \psep John.
+    The construction process of the cell is shown below.
+    %
+    \begin{center}
+        \begin{tikzpicture}[cell/.style = { minimum width = 6em, minimum height = 8em, draw=gray!75, thick }]
+            \node[cell] (0) [align=left] {%
+                S$'$ \rewrite\ \psep S};
+
+            \foreach \Source/\Target/\Label in {%
+                0/1/{S$'$ \rewrite\ \psep S\\%
+                     S \rewrite\ \psep DP VP},
+                1/2/{S$'$ \rewrite\ \psep S\\%
+                     S \rewrite\ \psep DP VP\\%
+                     DP \rewrite\ \psep DP D'\\%
+                     DP \rewrite\ \psep PN},
+                2/3/{S$'$ \rewrite\ \psep S\\%
+                     S \rewrite\ \psep DP VP\\%
+                     DP \rewrite\ \psep DP D'\\%
+                     DP \rewrite\ \psep PN\\%
+                     PN \rewrite\ \psep John}%
+                }
+            {
+                \node[cell] (\Target) [align=left, right=of \Source] {\Label};
+                \draw[->] (\Source) to (\Target);
+            }
+
+            \node[fill=gray!75] at (0.north) {\textbf{Cell (0,0)}};
+        \end{tikzpicture}
+    \end{center}
+    %
+    At this point the scan rule reads in \emph{John} and thus adds PN \rewrite\ John \psep to cell $(0,1)$.
+    This results in a number of complete step adding new items to the very same cell.
+    %
+    \begin{center}
+        \begin{tikzpicture}[cell/.style = { minimum width = 6em, minimum height = 8em, draw=gray!75, thick }]
+            \node[cell] (0) [align=left] {%
+                PN \rewrite\ John \psep};
+
+            \foreach \Source/\Target/\Label in {%
+                0/1/{PN \rewrite\ John \psep\\%
+                     DP \rewrite\ PN \psep},
+                1/2/{PN \rewrite\ John \psep\\%
+                     DP \rewrite\ PN \psep\\%
+                     DP \rewrite\ DP \psep D$'$\\%
+                     S  \rewrite\ DP \psep VP}%
+                }
+            {
+                \node[cell] (\Target) [align=left, right=of \Source] {\Label};
+                \draw[->] (\Source) to (\Target);
+            }
+
+            \node[fill=gray!75] at (0.north) {\textbf{Cell (0,1)}};
+        \end{tikzpicture}
+    \end{center}
+    %
+    The items in cell $(0,1)$ now trigger prediction steps that add items to cell $(1,1)$ for VP and D$'$.
+    This subsequently yields predictions for V\@ and Poss, too.
+    %
+    \begin{center}
+        \begin{tikzpicture}[cell/.style = { minimum width = 6em, minimum height = 8em, draw=gray!75, thick }]
+            \node[cell] (0) [align=left] {%
+                D$'$ \rewrite\ \psep Poss NP\\%
+                VP \rewrite\ \psep V};
+
+            \foreach \Source/\Target/\Label in {%
+                0/1/{D$'$ \rewrite\ \psep Poss NP\\%
+                     VP \rewrite\ \psep V\\%
+                     Poss \rewrite \psep 's\\%
+                     V \rewrite \psep disappeared}%
+                }
+            {
+                \node[cell] (\Target) [align=left, right=of \Source] {\Label};
+                \draw[->] (\Source) to (\Target);
+            }
+
+            \node[fill=gray!75] at (0.north) {\textbf{Cell (1,1)}};
+        \end{tikzpicture}
+    \end{center}
+    %
+    At this point scan can once again take place, reading in \emph{'s}.
+    As a result, the completed rule Poss \rewrite 's\psep is added to cell $(1,2)$.
+    Using this item, we can also add a partially completed D$'$ item.
+    %
+    \begin{center}
+        \begin{tikzpicture}[cell/.style = { minimum width = 6em, minimum height = 8em, draw=gray!75, thick }]
+            \node[cell] (0) [align=left] {%
+                PN \rewrite\ 's \psep};
+
+            \foreach \Source/\Target/\Label in {%
+                0/1/{PN \rewrite 's \psep\\%
+                     D$'$ \rewrite\ Poss \psep NP}%
+                }
+            {
+                \node[cell] (\Target) [align=left, right=of \Source] {\Label};
+                \draw[->] (\Source) to (\Target);
+            }
+
+            \node[fill=gray!75] at (0.north) {\textbf{Cell (1,2)}};
+        \end{tikzpicture}
+    \end{center}
+    %
+    The NP-prediction is added to cell $(2,2)$, and so are the N-predictions triggered by the item.
+    %
+    \begin{center}
+        \begin{tikzpicture}[cell/.style = { minimum width = 6em, minimum height = 8em, draw=gray!75, thick }]
+            \node[cell] (0) [align=left] {%
+                NP \rewrite\ \psep N};
+
+            \foreach \Source/\Target/\Label in {%
+                0/1/{NP \rewrite\ \psep N\\%
+                     N$'$ \rewrite\ \psep father\\%
+                     N$'$ \rewrite\ \psep car\\%
+                     N$'$ \rewrite\ \psep exhaust pipe}%
+                }
+            {
+                \node[cell] (\Target) [align=left, right=of \Source] {\Label};
+                \draw[->] (\Source) to (\Target);
+            }
+
+            \node[fill=gray!75] at (0.north) {\textbf{Cell (2,2)}};
+        \end{tikzpicture}
+    \end{center}
+    %
+    Scan now adds N \rewrite father\psep to cell $(2,3)$, which is also used to complete the NP item.
+    As a result, we can add a completed D$'$ item to cell $(1,3)$.
+    The completed D$'$ allows to put completed DPs into cell $(0,3)$, from which we infer a partially completed S item and add it to the same cell.
+    %
+    \begin{center}
+        \begin{tikzpicture}[cell/.style = { minimum width = 6em, minimum height = 8em, draw=gray!75, thick }]
+            \node[cell] (0) [align=left] {%
+                DP \rewrite\ DP D$'$\psep};
+
+            \foreach \Source/\Target/\Label in {%
+                0/1/{DP \rewrite\ DP D$'$\psep\\%
+                     DP \rewrite\ DP \psep D$'$\\%
+                     S \rewrite DP \psep VP$'$}%
+                }
+            {
+                \node[cell] (\Target) [align=left, right=of \Source] {\Label};
+                \draw[->] (\Source) to (\Target);
+            }
+
+            \node[cell] (13) [align=left, left=of 0] {%
+                D$'$ \rewrite Poss NP\psep};
+            \node[cell] (23) [align=left, left=of 13] {%
+                N \rewrite father\psep\\
+                NP \rewrite N\psep};
+
+            \foreach \Node/\Label in {0/{0,3}, 13/{1,3}, 23/{2,3}}
+                \node[fill=gray!75] at (\Node.north) {\textbf{Cell (\Label)}};
+        \end{tikzpicture}
+    \end{center}
+
+    Two crucial steps have taken place in the parse so far.
+    First, the parser did not end up in a loop of left predictions at the very beginning.
+    When the parser added DP \rewrite\ \psep DP D$'$ to cell $(0,0)$, it did not try to enter another instance of the item even though the corresponding predict rule is triggered by the addition of the item.
+    The interplay of agenda and chart is to thank for that:
+    %
+    \begin{enumerate}
+        \item When S \rewrite\ \psep DP VP is at the top of the agenda, it triggers the prediction of DP \rewrite\ \psep DP D$'$ and DP \rewrite\ \psep PN\@.
+        \item Both items are added to the chart, and are also put in the agenda to indicate that no inference rules have been applied to them yet.
+        \item In the next step, the parser computes the predictions of DP \rewrite \psep DP D$'$ and checks if some of them are not in the chart yet.
+            This is not the case, and thus the chart stays the same.
+        \item DP \rewrite\ \psep DP D$'$ is removed from the agenda and will not be operated on again.
+    \end{enumerate}
+    %
+    The way items are moved in and out of the agenda and stored in the chart thus prevents an infinite loop of predictions.
+
+    The other interesting aspect is the addition of DP \rewrite\ DP \psep D$'$ to cell $(0,3)$.
+    The item is obtained from DP \rewrite DP D$'$\psep\ in cell $(0,3)$ and DP \rewrite\ \psep DP D' in cell $(0,0)$.
+    This may seem surprising since the latter was already used in the assembly of \emph{John's father} into a DP\@.
+    But strictly speaking it only represents the prediction of a DP that starts at position 0.
+    Since the nested possessives construction has multiple DPs with this start position, the Earley parser is allowed to recycle the prediction accordingly.
+
+    Proceeding in the very same fashion of recycling the DP prediction, the Earley parser can infer the structure for \emph{John's father's car's exhaust pipe disappeared} without major problems.
+\end{examplebox}
+%
+\begin{exercise}
+    Draw the full chart for the Earley parse of \emph{John's father's car's exhaust pipe disappeared}.
+\end{exercise}
+
+\section{The GHR Algorithm}
+
+\begin{prooftree}
+    \AxiomC{$[i, A \rewrite \alpha \psep a \beta \gamma,j]$}
+    \LeftLabel{\textbf{Scan}\qquad}
+    \RightLabel{$a = w_{i}, \beta \rewrite^* \emptystring$}
+    \UnaryInfC{$[i, A \rewrite \alpha a \beta \psep \gamma, j+1]$}
+\end{prooftree}
+%
+\begin{prooftree}
+    \AxiomC{$[i, A \rewrite \alpha \psep B \beta,j]$}
+    \LeftLabel{\textbf{Predict}\qquad}
+    \RightLabel{$B \rewrite^* C \gamma, \alpha' \rewrite^* \emptystring$}
+    \UnaryInfC{$[j, C \rewrite \alpha' \psep \beta', j]$}
+\end{prooftree}
+%
+\begin{prooftree}
+    \AxiomC{$[i, A \rewrite \alpha \psep B \beta \gamma,j]$}
+    \AxiomC{$[j, B \rewrite \delta \psep,k]$}
+    \LeftLabel{\textbf{Complete1}\qquad}
+    \RightLabel{$\beta \rewrite^* \emptystring$}
+    \BinaryInfC{$[i, A \rewrite \alpha B \beta \psep \gamma,k]$}
+\end{prooftree}
+
+\begin{prooftree}
+    \AxiomC{$[i, A \rewrite \alpha \psep B \beta \gamma,j]$}
+    \AxiomC{$[j, C \rewrite \delta \psep,k]$}
+    \LeftLabel{\textbf{Complete2}\qquad}
+    \RightLabel{$B \rewrite^* C, \beta \rewrite^* \emptystring$}
+    \BinaryInfC{$[i, A \rewrite \alpha B \beta \psep \gamma,k]$}
+\end{prooftree}
 
 % \bibliographystyle{./bib/linquiry3}
 % \bibliography{./bib/universal,./bib/graf}
