@@ -1187,7 +1187,7 @@ This is not an issue with the LC parser thanks to the bottom-up restrictions on 
             S    & \rewrite & DP VP
             & 
             Poss & \rewrite & 's \\
-            DP   & \rewrite & DP D$'$
+            DP   & \rewrite & DP D$'$ | PN
             & 
             N    & \rewrite & father | car | exhaust pipe
             \\
@@ -1195,7 +1195,7 @@ This is not an issue with the LC parser thanks to the bottom-up restrictions on 
             & 
             PN   & \rewrite & John
             \\
-            NP   & \rewrite & N | PN
+            NP   & \rewrite & N
             &
             V    & \rewrite & disappeared
             \\
