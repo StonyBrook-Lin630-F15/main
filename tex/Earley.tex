@@ -535,6 +535,15 @@ It is interesting to see, though, how exactly the Earley parser avoids infinite 
 
 \section{The GHR Algorithm}
 
+Several variants of Earley parsing have been proposed in the literature.
+One of the fastest yet also intuitive ones is GHR parsing, originally proposed by Graham, Harrison and Ruzzo in \citeyear{Graham.EtAl80}.
+
+GHR parsing relies on analyzing the grammar in advance and identifying those non-terminals from which one can generate the empty string.
+In linguistic parlance, we have to identify those labels that may be the root of a subtree that consists only of unpronounced material.
+There is little point in exploring such subtrees since the input can neither confirm nor disconfirm their existence.
+Consequently, a $\psep$ to the left of such a node is allowed to move across it.
+This strategy requires nothing more than some minor modifications to the Earley parsing schema.
+
 \begin{prooftree}
     \AxiomC{$[i, A \rewrite \alpha \psep a \beta \gamma,j]$}
     \LeftLabel{\textbf{Scan}\qquad}
@@ -556,7 +565,7 @@ It is interesting to see, though, how exactly the Earley parser avoids infinite 
     \RightLabel{$\beta \rewrite^* \emptystring$}
     \BinaryInfC{$[i, A \rewrite \alpha B \beta \psep \gamma,k]$}
 \end{prooftree}
-
+%
 \begin{prooftree}
     \AxiomC{$[i, A \rewrite \alpha \psep B \beta \gamma,j]$}
     \AxiomC{$[j, C \rewrite \delta \psep,k]$}
@@ -565,5 +574,23 @@ It is interesting to see, though, how exactly the Earley parser avoids infinite 
     \BinaryInfC{$[i, A \rewrite \alpha B \beta \psep \gamma,k]$}
 \end{prooftree}
 
-% \bibliographystyle{./bib/linquiry3}
-% \bibliography{./bib/universal,./bib/graf}
+Side conditions of the form $\alpha \rewrite^* \beta$ express that either $\alpha = \beta$ or $\beta$ can be obtained from $\alpha$ in one or more rewrite steps.
+For any given CFG, whether $B \rewrite^* C \gamma$ and $B \rewrite^* \emptystring$ can be determined in advance.
+This can then be precompiled into the parser, e.g.\ in form of a boolean matrix.
+This matrix contains a row for each non-terminal symbol as well as a column for each non-terminal symbol and the empty string.
+A cell $(B,C)$ has value $1$ iff $B \rewrite^* C \gamma$, and similarly $(B,\emptystring)$ is 1 iff $B \rewrite \emptystring$ (the latter is just a special case of the former).
+This strategy can be extended to sequences of non-terminals so that even $\alpha' \rewrite^* \emptystring$ in the predict rule can be verified in a single step.
+
+\begin{exercise}
+    Every inference step in the Earley parse schema is still a valid inference step in the GHR parse schema.
+    Explain why!
+\end{exercise}
+
+GHR parsing is an obvious variant of Earley parsing.
+That does not make it less of a parser, its speed-up over standard Earley parsing is a notable achievement.
+It also shows that parsing schemata highlight commonalities between distinct parsing algorithms.
+The relations between parsers that can be established this way extend far beyond simple cases like Earley and GHR\@.
+In the next chapter, we will establish principled connections between Earley, CKY, and LC parsing.
+
+\bibliographystyle{./bib/linquiry3}
+\bibliography{./bib/universal,./bib/graf}
