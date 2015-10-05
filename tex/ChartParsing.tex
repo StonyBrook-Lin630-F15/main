@@ -672,6 +672,7 @@ Our example chart is repeated below using the new format.
           \hline
           & the & anvil & hit & the & duck & on & the & head\\
     \end{tabular}
+    %fixme: some numbers missing
 \end{center}
 
 This kind of table is much harder to decipher for humans, but it contains no wasted cells.
@@ -810,10 +811,12 @@ The CKY parsing schema, on the other hand, can easily be generalized to arbitrar
 \end{prooftree}
 %
 Any known implementation is still much faster with CNF grammars, but the claim that CKY parsing only works for those is misleading.
+% fixme: explain why it is faster
 
 \subsection{Formalizing the Data Structure}
 Agenda initialized as $\setof{[i, A, i+1] | A \rewrite a, a = w_i}$
 
-
 \bibliographystyle{./bib/linquiry3}
 \bibliography{./bib/universal,./bib/graf}
+
+%fixme: more exercises
